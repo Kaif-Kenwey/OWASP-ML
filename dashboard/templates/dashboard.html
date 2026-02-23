@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="cards">
+    <div class="card">
+        <p>Total Alerts</p>
+        <h2 class="counter" data-target="{{ total }}">0</h2>
+    </div>
+    <div class="card danger">
+        <p>High Risk</p>
+        <h2 class="counter" data-target="{{ high }}">0</h2>
+    </div>
+    <div class="card warning">
+        <p>Medium Risk</p>
+        <h2 class="counter" data-target="{{ medium }}">0</h2>
+    </div>
+    <div class="card success">
+        <p>Low Risk</p>
+        <h2 class="counter" data-target="{{ low }}">0</h2>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <button class="filter-btn" data-risk="All">All</button>
+    <button class="filter-btn" data-risk="High">High</button>
+    <button class="filter-btn" data-risk="Medium">Medium</button>
+    <button class="filter-btn" data-risk="Low">Low</button>
+</div>
+
+<div class="charts-grid">
+    <div class="chart-box">
+        <h3>Risk Distribution</h3>
+        <canvas id="riskChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <h3>Confidence Levels</h3>
+        <canvas id="confChart"></canvas>
+    </div>
+</div>
+
+<div class="chart-box">
+    <h3>Top CWE IDs</h3>
+    <canvas id="cweChart"></canvas>
+</div>
+
+<script>
+const riskLabels = {{ risk_labels|tojson }};
+const riskValues = {{ risk_values|tojson }};
+const confLabels = {{ conf_labels|tojson }};
+const confValues = {{ conf_values|tojson }};
+const cweLabels = {{ cwe_labels|tojson }};
+const cweValues = {{ cwe_values|tojson }};
+
+window.dashboardData = {
+    riskLabels,
+    riskValues,
+    confLabels,
+    confValues,
+    cweLabels,
+    cweValues
+};
+</script>
+
+{% endblock %}

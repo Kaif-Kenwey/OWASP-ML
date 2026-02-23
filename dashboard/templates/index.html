@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>OWASP ML Detector</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: #f4f6fb;
+        }
+
+        .container {
+            display: flex;
+        }
+
+        .sidebar {
+            width: 240px;
+            background: #1f2937;
+            color: white;
+            min-height: 100vh;
+            padding: 30px 20px;
+        }
+
+        .sidebar h2 {
+            margin-bottom: 40px;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar li {
+            margin: 20px 0;
+            opacity: 0.8;
+        }
+
+        .main {
+            flex: 1;
+            padding: 40px;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        .card h3 {
+            margin: 0;
+            font-size: 14px;
+            color: gray;
+        }
+
+        .card h1 {
+            margin: 10px 0 0;
+        }
+
+        .charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.05);
+        }
+
+        canvas {
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="sidebar">
+        <h2>OWASP ML</h2>
+        <ul>
+            <li>Dashboard</li>
+            <li>Scan Reports</li>
+            <li>ML Insights</li>
+            <li>Settings</li>
+        </ul>
+    </div>
+
+    <div class="main">
+
+        <div class="cards">
+            <div class="card">
+                <h3>Total Alerts</h3>
+                <h1>{{ total_alerts }}</h1>
+            </div>
+            <div class="card">
+                <h3>High Risk</h3>
+                <h1 style="color:red;">{{ high }}</h1>
+            </div>
+            <div class="card">
+                <h3>Medium Risk</h3>
+                <h1 style="color:orange;">{{ medium }}</h1>
+            </div>
+            <div class="card">
+                <h3>Low Risk</h3>
+                <h1 style="color:green;">{{ low }}</h1>
+            </div>
+        </div>
+
+        <div class="charts">
+            <div class="chart-card">
+                <h3>Risk Distribution</h3>
+                <canvas id="riskChart"></canvas>
+            </div>
+
+            <div class="chart-card">
+                <h3>Confidence Levels</h3>
+                <canvas id="confChart"></canvas>
+            </div>
+        </div>
+
+        <div style="margin-top: 30px;" class="chart-card">
+            <h3>Top CWE IDs</h3>
+            <canvas id="cweChart"></canvas>
+        </div>
+
+    </div>
+</div>
+
+<script>
+new Chart(document.getElementById('riskChart'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ risk_labels|safe }},
+        datasets: [{
+            data: {{ risk_values|safe }},
+            backgroundColor: ['#ef4444','#f97316','#22c55e','#3b82f6']
+        }]
+    }
+});
+
+new Chart(document.getElementById('confChart'), {
+    type: 'pie',
+    data: {
+        labels: {{ conf_labels|safe }},
+        datasets: [{
+            data: {{ conf_values|safe }},
+            backgroundColor: ['#8b5cf6','#06b6d4','#64748b']
+        }]
+    }
+});
+
+new Chart(document.getElementById('cweChart'), {
+    type: 'bar',
+    data: {
+        labels: {{ cwe_labels|safe }},
+        datasets: [{
+            label: 'Occurrences',
+            data: {{ cwe_values|safe }},
+            backgroundColor: '#6366f1'
+        }]
+    }
+});
+</script>
+
+</body>
+</html>
