@@ -1,0 +1,194 @@
+risk,confidence,cweid,cwe_numeric,attack_type,method,url,url_length,param_length,has_query_params,path_depth,description_length,solution_length,reference_count,confidence_encoded,method_encoded,original_risk,predicted_risk,hybrid_score,OWASP_Category,Final_Risk,ML_Confidence_%,Explanation
+,Medium,550,550,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,331,251,1,2,0,,Low,0.582,Uncategorized,High,58.2,Standard vulnerability pattern detected
+,High,693,693,Security Misconfiguration,GET,http://testaspnet.vulnweb.com/sitemap.xml,41,0,0,1,588,125,1,0,0,,Medium,0.516,A05 - Security Misconfiguration,Medium,51.6,High scanner confidence
+,High,693,693,Security Misconfiguration,GET,http://testaspnet.vulnweb.com,29,0,0,0,588,125,1,0,0,,Medium,0.51,A05 - Security Misconfiguration,Medium,51.0,High scanner confidence
+,Medium,1295,1295,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,186,56,1,2,0,,Informational,0.28,Uncategorized,Low,28.0,Standard vulnerability pattern detected
+,High,497,497,Other,GET,http://testaspnet.vulnweb.com/robots.txt,40,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,Medium,615,615,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,79,116,1,2,0,,Low,0.33,Uncategorized,Low,33.0,Standard vulnerability pattern detected
+,Medium,693,693,Security Misconfiguration,GET,http://testaspnet.vulnweb.com/robots.txt,40,0,0,1,452,385,1,2,0,,Low,0.441,A05 - Security Misconfiguration,Low,44.1,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testaspnet.vulnweb.com/robots.txt,40,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,497,497,Other,GET,http://testaspnet.vulnweb.com/sitemap.xml,41,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,High,497,497,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,225,142,1,0,0,,Low,0.504,Uncategorized,Medium,50.4,High scanner confidence
+,Medium,497,497,Other,GET,http://testaspnet.vulnweb.com/sitemap.xml,41,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,933,933,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,100,57,1,0,0,,Medium,0.336,Uncategorized,Low,33.6,High scanner confidence
+,Medium,497,497,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,291,118,1,2,0,,Low,0.624,Uncategorized,High,62.4,Standard vulnerability pattern detected
+,Medium,311,311,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,49,60,1,2,0,,Medium,0.33,Uncategorized,Low,33.0,Standard vulnerability pattern detected
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/sitemap.xml,38,0,0,1,588,125,1,0,0,,Medium,0.522,A05 - Security Misconfiguration,Medium,52.2,High scanner confidence
+,High,497,497,Other,GET,http://testasp.vulnweb.com/robots.txt,37,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/robots.txt,37,0,0,1,452,385,1,2,0,,Low,0.438,A05 - Security Misconfiguration,Low,43.8,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/robots.txt,37,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,497,497,Other,GET,http://testasp.vulnweb.com/sitemap.xml,38,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/sitemap.xml,38,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,163,456,1,2,0,,Medium,0.546,Uncategorized,Medium,54.6,Standard vulnerability pattern detected
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,163,456,1,2,0,,Medium,0.459,Uncategorized,Medium,45.9,"URL contains query parameters, Long URL structure"
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,163,456,1,2,0,,Medium,0.546,Uncategorized,Medium,54.6,Standard vulnerability pattern detected
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com,26,0,0,0,163,456,1,2,0,,Medium,0.519,Uncategorized,Medium,51.9,Standard vulnerability pattern detected
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,588,125,1,0,0,,Medium,0.522,A05 - Security Misconfiguration,Medium,52.2,High scanner confidence
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,588,125,1,0,0,,Medium,0.522,A05 - Security Misconfiguration,Medium,52.2,High scanner confidence
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com,26,0,0,0,588,125,1,0,0,,Medium,0.51,A05 - Security Misconfiguration,Medium,51.0,High scanner confidence
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,588,125,1,0,0,,Medium,0.3463,A05 - Security Misconfiguration,Low,34.63,"URL contains query parameters, Long URL structure, High scanner confidence"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,Medium,1004,1004,Other,GET,http://testasp.vulnweb.com,26,0,0,0,296,53,1,2,0,,Informational,0.289,Uncategorized,Low,28.9,Standard vulnerability pattern detected
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,452,385,1,2,0,,Low,0.438,A05 - Security Misconfiguration,Low,43.8,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,Medium,1275,1275,Other,GET,http://testasp.vulnweb.com,26,0,0,0,267,94,1,2,0,,Informational,0.289,Uncategorized,Low,28.9,Standard vulnerability pattern detected
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,452,385,1,2,0,,Low,0.438,A05 - Security Misconfiguration,Low,43.8,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,497,497,Other,GET,http://testasp.vulnweb.com,26,0,0,0,225,142,1,0,0,,Low,0.507,Uncategorized,Medium,50.7,High scanner confidence
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com,26,0,0,0,452,385,1,2,0,,Low,0.438,A05 - Security Misconfiguration,Low,43.8,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com,26,0,0,0,291,118,1,2,0,,Low,0.627,Uncategorized,High,62.7,Standard vulnerability pattern detected
+,Medium,-1,1,Other,GET,http://testasp.vulnweb.com,26,0,0,0,369,90,1,2,0,,Informational,0.529,Uncategorized,Medium,52.9,Standard vulnerability pattern detected
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,163,456,1,2,0,,Medium,0.4637,Uncategorized,Medium,46.37,"URL contains query parameters, Long URL structure"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,225,142,1,0,0,,Low,0.501,Uncategorized,Medium,50.1,"URL contains query parameters, Long URL structure, High scanner confidence"
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,588,125,1,0,0,,Medium,0.3534,A05 - Security Misconfiguration,Low,35.34,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,452,385,1,2,0,,Low,0.63,A05 - Security Misconfiguration,High,63.0,"URL contains query parameters, Long URL structure"
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,291,118,1,2,0,,Low,0.576,Uncategorized,High,57.6,"URL contains query parameters, Long URL structure"
+,Low,352,352,CSRF,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,1429,1273,1,1,0,,Medium,0.4125,A01 - Broken Access Control,Low,41.25,"URL contains query parameters, Long URL structure"
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,163,456,1,2,0,,Medium,0.4624,Uncategorized,Medium,46.24,"URL contains query parameters, Long URL structure"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,225,142,1,0,0,,Low,0.5079,Uncategorized,Medium,50.79,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,452,385,1,2,0,,Low,0.63,A05 - Security Misconfiguration,High,63.0,"URL contains query parameters, Long URL structure"
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,291,118,1,2,0,,Low,0.576,Uncategorized,High,57.6,"URL contains query parameters, Long URL structure"
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,588,125,1,0,0,,Medium,0.3554,A05 - Security Misconfiguration,Low,35.54,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Low,352,352,CSRF,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,1429,1273,1,1,0,,Medium,0.414,A01 - Broken Access Control,Low,41.4,"URL contains query parameters, Long URL structure"
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,163,456,1,2,0,,Medium,0.54,Uncategorized,Medium,54.0,URL contains query parameters
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,225,142,1,0,0,,Low,0.5103,Uncategorized,Medium,51.03,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,452,385,1,2,0,,Low,0.63,A05 - Security Misconfiguration,High,63.0,"URL contains query parameters, Long URL structure"
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,291,118,1,2,0,,Low,0.576,Uncategorized,High,57.6,"URL contains query parameters, Long URL structure"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/styles.css,37,0,0,1,225,142,1,0,0,,Low,0.513,Uncategorized,Medium,51.3,High scanner confidence
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/styles.css,37,0,0,1,452,385,1,2,0,,Low,0.438,A05 - Security Misconfiguration,Low,43.8,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/styles.css,37,0,0,1,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,588,125,1,0,0,,Medium,0.498,A05 - Security Misconfiguration,Medium,49.8,"URL contains query parameters, High scanner confidence"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,225,142,1,0,0,,Low,0.492,Uncategorized,Medium,49.2,"URL contains query parameters, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,452,385,1,2,0,,Low,0.435,A05 - Security Misconfiguration,Low,43.5,URL contains query parameters
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,291,118,1,2,0,,Low,0.591,Uncategorized,High,59.1,URL contains query parameters
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Images/logo.gif,42,0,0,2,225,142,1,0,0,,Low,0.516,Uncategorized,Medium,51.6,High scanner confidence
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Images/logo.gif,42,0,0,2,452,385,1,2,0,,Low,0.441,A05 - Security Misconfiguration,Low,44.1,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Images/logo.gif,42,0,0,2,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,-1,1,Other,GET,http://testasp.vulnweb.com,26,0,0,0,369,90,1,0,0,,Informational,0.568,Uncategorized,High,56.8,High scanner confidence
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,163,456,1,2,0,,Medium,0.537,Uncategorized,Medium,53.7,URL contains query parameters
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showthread.asp?id=0,46,4,1,1,588,125,1,0,0,,Medium,0.501,A05 - Security Misconfiguration,Medium,50.1,"URL contains query parameters, High scanner confidence"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,225,142,1,0,0,,Low,0.492,Uncategorized,Medium,49.2,"URL contains query parameters, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,452,385,1,2,0,,Low,0.435,A05 - Security Misconfiguration,Low,43.5,URL contains query parameters
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,291,118,1,2,0,,Low,0.588,Uncategorized,High,58.8,URL contains query parameters
+,Medium,1021,1021,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,163,456,1,2,1,,Medium,0.4657,Uncategorized,Medium,46.57,"URL contains query parameters, Long URL structure"
+,High,693,693,Security Misconfiguration,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,588,125,1,0,1,,Medium,0.3683,A05 - Security Misconfiguration,Low,36.83,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Low,352,352,CSRF,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,1429,1273,1,1,1,,Medium,0.4141,A01 - Broken Access Control,Low,41.41,"URL contains query parameters, Long URL structure"
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,163,456,1,2,0,,Medium,0.585,Uncategorized,High,58.5,URL contains query parameters
+,High,497,497,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,225,142,1,0,1,,Low,0.5226,Uncategorized,Medium,52.26,"URL contains query parameters, Long URL structure, High scanner confidence"
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,588,125,1,0,0,,Medium,0.492,A05 - Security Misconfiguration,Medium,49.2,"URL contains query parameters, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,452,385,1,2,1,,Low,0.6405,A05 - Security Misconfiguration,High,64.05,"URL contains query parameters, Long URL structure"
+,Medium,497,497,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,291,118,1,2,1,,Low,0.5892,Uncategorized,High,58.92,"URL contains query parameters, Long URL structure"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,225,142,1,0,0,,Low,0.477,Uncategorized,Medium,47.7,"URL contains query parameters, High scanner confidence"
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,452,385,1,2,0,,Low,0.441,A05 - Security Misconfiguration,Low,44.1,URL contains query parameters
+,High,497,497,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,225,142,1,0,1,,Low,0.524,Uncategorized,Medium,52.4,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,291,118,1,2,0,,Low,0.567,Uncategorized,High,56.7,URL contains query parameters
+,Medium,497,497,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,291,118,1,2,1,,Low,0.5909,Uncategorized,High,59.09,"URL contains query parameters, Long URL structure"
+,Medium,550,550,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FSearch%2Easp%3F,65,25,1,1,331,251,1,2,1,,Low,0.6267,Uncategorized,High,62.67,"URL contains query parameters, Long URL structure"
+,High,693,693,Security Misconfiguration,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FSearch%2Easp%3F,65,25,1,1,588,125,1,0,1,,Medium,0.3694,A05 - Security Misconfiguration,Low,36.94,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,1295,1295,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FTemplatize%2Easp%3Fitem%3Dhtml%2Fabout%2Ehtml,95,55,1,1,186,56,1,2,1,,Informational,0.3751,Uncategorized,Low,37.51,"URL contains query parameters, Long URL structure"
+,High,497,497,Other,GET,http://testasp.vulnweb.com/avatars/noavatar.gif,47,0,0,2,225,142,1,0,0,,Low,0.519,Uncategorized,Medium,51.9,High scanner confidence
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/avatars/noavatar.gif,47,0,0,2,452,385,1,2,0,,Low,0.438,A05 - Security Misconfiguration,Low,43.8,Standard vulnerability pattern detected
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/avatars/noavatar.gif,47,0,0,2,291,118,1,2,0,,Low,0.63,Uncategorized,High,63.0,Standard vulnerability pattern detected
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D1,73,35,1,1,225,142,1,0,0,,Low,0.5139,Uncategorized,Medium,51.39,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D1,73,35,1,1,291,118,1,2,0,,Low,0.5764,Uncategorized,High,57.64,"URL contains query parameters, Long URL structure"
+,Medium,22,22,Path Traversal,GET,http://testasp.vulnweb.com/Templatize.asp?item=..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2FWindows%2Fsystem.ini,147,105,1,1,2190,3658,1,2,0,,High,0.4675,A01 - Broken Access Control,High,46.75,"URL contains query parameters, Long URL structure"
+,Low,22,22,Path Traversal,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,2190,3658,1,1,1,,High,0.3742,A01 - Broken Access Control,High,37.42,"URL contains query parameters, Long URL structure"
+,Medium,601,601,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=https%3A%2F%2F883753986924105674.owasp.org,86,49,1,1,795,2272,1,2,1,,Low,0.3407,Uncategorized,Low,34.07,"URL contains query parameters, Long URL structure"
+,Medium,601,601,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=https%3A%2F%2F883753986924105674.owasp.org,87,49,1,1,795,2272,1,2,0,,Low,0.3283,Uncategorized,Low,32.83,"URL contains query parameters, Long URL structure"
+,Low,89,89,SQL Injection,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP%27,53,15,1,1,30,1035,1,1,0,,High,0.4772,A03 - Injection,High,47.72,"URL contains query parameters, Injection-related CWE detected"
+,Low,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,1,1,,High,0.425,A03 - Injection,High,42.5,"URL contains query parameters, Injection-related CWE detected, Long URL structure"
+,Low,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,1,1,,High,0.425,A03 - Injection,High,42.5,"URL contains query parameters, Injection-related CWE detected, Long URL structure"
+,Low,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,30,1035,1,1,1,,High,0.4259,A03 - Injection,High,42.59,"URL contains query parameters, Injection-related CWE detected, Long URL structure"
+,Medium,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,2,1,,High,0.4857,A03 - Injection,High,48.57,"URL contains query parameters, Injection-related CWE detected, Long URL structure"
+,Medium,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,2,1,,High,0.4857,A03 - Injection,High,48.57,"URL contains query parameters, Injection-related CWE detected, Long URL structure"
+,Medium,311,311,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,49,60,1,2,1,,Informational,0.336,Uncategorized,Low,33.6,"URL contains query parameters, Long URL structure"
+,High,16,16,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,361,57,1,0,0,,Informational,0.5392,Uncategorized,Medium,53.92,"URL contains query parameters, Long URL structure, High scanner confidence"
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1,,Informational,0.5654,Uncategorized,High,56.54,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0,,Informational,0.586,Uncategorized,High,58.6,URL contains query parameters
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,214,0,1,2,0,,Informational,0.553,Uncategorized,High,55.3,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0,,Informational,0.56,Uncategorized,High,56.0,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0,,Informational,0.541,Uncategorized,Medium,54.1,Standard vulnerability pattern detected
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1,,Informational,0.5636,Uncategorized,High,56.36,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0,,Informational,0.556,Uncategorized,High,55.6,"URL contains query parameters, Long URL structure"
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0,,Informational,0.544,Uncategorized,Medium,54.4,Standard vulnerability pattern detected

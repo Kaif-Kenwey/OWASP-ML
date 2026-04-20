@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block content %}
+
+<h1>Threat Overview</h1>
+
+{% if not data_available %}
+<p>No data available</p>
+{% else %}
+
+<div class="card-grid">
+    <div class="card glow">
+        <h3>Total Alerts</h3>
+        <p>{{ total_alerts }}</p>
+    </div>
+</div>
+
+<div class="charts">
+    <canvas id="riskChart"></canvas>
+    <canvas id="attackChart"></canvas>
+</div>
+
+<script>
+const riskData = {
+    labels: {{ risk_dist.keys()|list|safe }},
+    datasets: [{
+        data: {{ risk_dist.values()|list|safe }},
+        backgroundColor: ["#ff4d4d","#ff944d","#ffd24d","#4CAF50"]
+    }]
+};
+
+new Chart(document.getElementById("riskChart"), {
+    type: "doughnut",
+    data: riskData
+});
+
+const attackData = {
+    labels: {{ attack_dist.keys()|list|safe }},
+    datasets: [{
+        label: "Attack Count",
+        data: {{ attack_dist.values()|list|safe }},
+        backgroundColor: "#4da6ff"
+    }]
+};
+
+new Chart(document.getElementById("attackChart"), {
+    type: "bar",
+    data: attackData
+});
+</script>
+
+{% endif %}
+{% endblock %}

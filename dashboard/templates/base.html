@@ -1,52 +1,22 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OWASP ML Detector</title>
+    <title>OWASP AI Dashboard</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
-<div class="layout">
-
-    <!-- Sidebar -->
-    <aside class="sidebar">
-        <div class="logo">OWASP ML</div>
-
-        <nav>
-            <a href="/" class="nav-item">Dashboard</a>
-            <a href="/reports" class="nav-item">Reports</a>
-            <a href="/insights" class="nav-item">ML Insights</a>
-            <a href="/settings" class="nav-item">Settings</a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <button id="darkToggle">🌙 Dark Mode</button>
-        </div>
-    </aside>
-
-    <!-- Main -->
-    <div class="main">
-
-        <header class="topbar">
-            <div class="left">
-                <input type="text" placeholder="Search..." class="search-box">
-                <button id="refreshBtn">🔄 Refresh</button>
-            </div>
-
-            <div class="right">
-                <span id="clock"></span>
-                <div class="profile">Admin</div>
-            </div>
-        </header>
-
-        <div class="content">
-            {% block content %}{% endblock %}
-        </div>
-
-    </div>
+<div class="sidebar">
+    <h2>OWASP AI</h2>
+    <a href="/">Dashboard</a>
+    <a href="/ml-insights">ML Insights</a>
+    <a href="/reports">Detailed Report</a>
 </div>
 
-<script src="{{ url_for('static', filename='js/script.js') }}"></script>
+<div class="main-content">
+    {% block content %}{% endblock %}
+</div>
+
 </body>
 </html>

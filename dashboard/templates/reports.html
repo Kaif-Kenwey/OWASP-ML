@@ -1,7 +1,32 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Scan Report Table</h2>
-<div class="table-container">
-    {{ table|safe }}
-</div>
+
+<h1>Detailed Vulnerability Report</h1>
+
+<table class="intel-table">
+    <thead>
+        <tr>
+            <th>URL</th>
+            <th>Risk</th>
+            <th>Attack Type</th>
+            <th>CWE</th>
+            <th>Method</th>
+            <th>Confidence</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in data %}
+        <tr>
+            <td>{{ row.url }}</td>
+            <td>{{ row.risk }}</td>
+            <td>{{ row.attack_type }}</td>
+            <td>CWE-{{ row.cwe_numeric }}</td>
+            <td>{{ row.method }}</td>
+            <td>{{ row.confidence }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
 {% endblock %}

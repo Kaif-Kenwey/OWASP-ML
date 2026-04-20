@@ -1,65 +1,85 @@
 {% extends "base.html" %}
+
 {% block content %}
 
-<div class="cards">
-    <div class="card">
-        <p>Total Alerts</p>
-        <h2 class="counter" data-target="{{ total }}">0</h2>
+<h1>OWASP AI Threat Intelligence Dashboard</h1>
+
+<div class="stats-grid">
+
+    <div class="card critical">
+    	<h3>Critical Risk</h3>
+        <p>{{ critical_count }}</p>
     </div>
-    <div class="card danger">
-        <p>High Risk</p>
-        <h2 class="counter" data-target="{{ high }}">0</h2>
+
+    <div class="card high">
+        <h3>High Risk</h3>
+        <p>{{ high_count }}</p>
     </div>
-    <div class="card warning">
-        <p>Medium Risk</p>
-        <h2 class="counter" data-target="{{ medium }}">0</h2>
+
+    <div class="card medium">
+        <h3>Medium Risk</h3>
+        <p>{{ medium_count }}</p>
     </div>
-    <div class="card success">
-        <p>Low Risk</p>
-        <h2 class="counter" data-target="{{ low }}">0</h2>
+
+    <div class="card low">
+        <h3>Low Risk</h3>
+        <p>{{ low_count }}</p>
     </div>
+
 </div>
 
-<div class="filter-bar">
-    <button class="filter-btn" data-risk="All">All</button>
-    <button class="filter-btn" data-risk="High">High</button>
-    <button class="filter-btn" data-risk="Medium">Medium</button>
-    <button class="filter-btn" data-risk="Low">Low</button>
+<div class="chart-container">
+    <h3>Risk Distribution</h3>
+    <canvas id="riskChart"></canvas>
 </div>
 
-<div class="charts-grid">
-    <div class="chart-box">
-        <h3>Risk Distribution</h3>
-        <canvas id="riskChart"></canvas>
-    </div>
-
-    <div class="chart-box">
-        <h3>Confidence Levels</h3>
-        <canvas id="confChart"></canvas>
-    </div>
+<div class="chart-container">
+    <h3>Top Attack Types</h3>
+    <ul>
+        {% for attack, count in attack_counts.items() %}
+            <li>{{ attack }} ({{ count }})</li>
+        {% endfor %}
+    </ul>
 </div>
 
-<div class="chart-box">
+<div class="chart-container">
+    <h3>Top Vulnerable URLs (High Risk)</h3>
+    <ul>
+        {% for url, count in top_urls.items() %}
+            <li>{{ url }} ({{ count }})</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="chart-container">
+    <h3>HTTP Methods</h3>
+    <ul>
+        {% for method, count in method_counts.items() %}
+            <li>{{ method }} ({{ count }})</li>
+        {% endfor %}
+    </ul>
+</div>
+
+<div class="chart-container">
     <h3>Top CWE IDs</h3>
-    <canvas id="cweChart"></canvas>
+    <ul>
+        {% for cwe, count in cwe_counts.items() %}
+            <li>CWE-{{ cwe }} ({{ count }})</li>
+        {% endfor %}
+    </ul>
 </div>
 
 <script>
-const riskLabels = {{ risk_labels|tojson }};
-const riskValues = {{ risk_values|tojson }};
-const confLabels = {{ conf_labels|tojson }};
-const confValues = {{ conf_values|tojson }};
-const cweLabels = {{ cwe_labels|tojson }};
-const cweValues = {{ cwe_values|tojson }};
-
-window.dashboardData = {
-    riskLabels,
-    riskValues,
-    confLabels,
-    confValues,
-    cweLabels,
-    cweValues
-};
+new Chart(document.getElementById('riskChart'), {
+    type: 'doughnut',
+    data: {
+        labels: ['Low', 'Medium', 'High'],
+        datasets: [{
+            data: [{{ low_count }}, {{ medium_count }}, {{ high_count }}],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+        }]
+    }
+});
 </script>
 
 {% endblock %}

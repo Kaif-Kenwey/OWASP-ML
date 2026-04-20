@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<h1>Machine Learning Insights</h1>
+
+<div class="stats-grid">
+    <div class="card low">
+        <h3>ML Low</h3>
+        <p>{{ ml_low }}</p>
+    </div>
+
+    <div class="card medium">
+        <h3>ML Medium</h3>
+        <p>{{ ml_medium }}</p>
+    </div>
+
+    <div class="card high">
+        <h3>ML High</h3>
+        <p>{{ ml_high }}</p>
+    </div>
+</div>
+
+<div class="chart-container">
+    <canvas id="mlChart"></canvas>
+</div>
+
+<script>
+new Chart(document.getElementById('mlChart'), {
+    type: 'bar',
+    data: {
+        labels: ['Low', 'Medium', 'High'],
+        datasets: [{
+            label: 'Predicted Risk',
+            data: [{{ ml_low }}, {{ ml_medium }}, {{ ml_high }}],
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
+        }]
+    }
+});
+</script>
+
+{% endblock %}

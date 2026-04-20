@@ -1,0 +1,194 @@
+risk,confidence,cweid,cwe_numeric,attack_type,method,url,url_length,param_length,has_query_params,path_depth,description_length,solution_length,reference_count,confidence_encoded,method_encoded
+,Medium,550,550,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,331,251,1,2,0
+,High,693,693,Security Misconfiguration,GET,http://testaspnet.vulnweb.com/sitemap.xml,41,0,0,1,588,125,1,0,0
+,High,693,693,Security Misconfiguration,GET,http://testaspnet.vulnweb.com,29,0,0,0,588,125,1,0,0
+,Medium,1295,1295,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,186,56,1,2,0
+,High,497,497,Other,GET,http://testaspnet.vulnweb.com/robots.txt,40,0,0,1,225,142,1,0,0
+,Medium,615,615,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,79,116,1,2,0
+,Medium,693,693,Security Misconfiguration,GET,http://testaspnet.vulnweb.com/robots.txt,40,0,0,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testaspnet.vulnweb.com/robots.txt,40,0,0,1,291,118,1,2,0
+,High,497,497,Other,GET,http://testaspnet.vulnweb.com/sitemap.xml,41,0,0,1,225,142,1,0,0
+,High,497,497,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,225,142,1,0,0
+,Medium,497,497,Other,GET,http://testaspnet.vulnweb.com/sitemap.xml,41,0,0,1,291,118,1,2,0
+,High,933,933,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,100,57,1,0,0
+,Medium,497,497,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,291,118,1,2,0
+,Medium,311,311,Other,GET,http://testaspnet.vulnweb.com,29,0,0,0,49,60,1,2,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/sitemap.xml,38,0,0,1,588,125,1,0,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/robots.txt,37,0,0,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/robots.txt,37,0,0,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/robots.txt,37,0,0,1,291,118,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/sitemap.xml,38,0,0,1,225,142,1,0,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/sitemap.xml,38,0,0,1,291,118,1,2,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,163,456,1,2,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,163,456,1,2,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,163,456,1,2,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com,26,0,0,0,163,456,1,2,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,588,125,1,0,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,588,125,1,0,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com,26,0,0,0,588,125,1,0,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,588,125,1,0,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,225,142,1,0,0
+,Medium,1004,1004,Other,GET,http://testasp.vulnweb.com,26,0,0,0,296,53,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,291,118,1,2,0
+,Medium,1275,1275,Other,GET,http://testasp.vulnweb.com,26,0,0,0,267,94,1,2,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,291,118,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com,26,0,0,0,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com,26,0,0,0,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com,26,0,0,0,291,118,1,2,0
+,Medium,-1,1,Other,GET,http://testasp.vulnweb.com,26,0,0,0,369,90,1,2,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,163,456,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,225,142,1,0,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,588,125,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Templatize.asp?item=html/about.html,62,20,1,2,291,118,1,2,0
+,Low,352,352,CSRF,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,1429,1273,1,1,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,163,456,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,291,118,1,2,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,588,125,1,0,0
+,Low,352,352,CSRF,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,1429,1273,1,1,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,163,456,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,291,118,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/styles.css,37,0,0,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/styles.css,37,0,0,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/styles.css,37,0,0,1,291,118,1,2,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,588,125,1,0,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/showforum.asp?id=0,45,4,1,1,291,118,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Images/logo.gif,42,0,0,2,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Images/logo.gif,42,0,0,2,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Images/logo.gif,42,0,0,2,291,118,1,2,0
+,High,-1,1,Other,GET,http://testasp.vulnweb.com,26,0,0,0,369,90,1,0,0
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,163,456,1,2,0
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showthread.asp?id=0,46,4,1,1,588,125,1,0,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/showthread.asp?id=1,46,4,1,1,291,118,1,2,0
+,Medium,1021,1021,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,163,456,1,2,1
+,High,693,693,Security Misconfiguration,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,588,125,1,0,1
+,Low,352,352,CSRF,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,1429,1273,1,1,1
+,Medium,1021,1021,Other,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,163,456,1,2,0
+,High,497,497,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,225,142,1,0,1
+,High,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,588,125,1,0,0
+,Medium,693,693,Security Misconfiguration,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,452,385,1,2,1
+,Medium,497,497,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,291,118,1,2,1
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,452,385,1,2,0
+,High,497,497,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,225,142,1,0,1
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP,50,12,1,1,291,118,1,2,0
+,Medium,497,497,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,291,118,1,2,1
+,Medium,550,550,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FSearch%2Easp%3F,65,25,1,1,331,251,1,2,1
+,High,693,693,Security Misconfiguration,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FSearch%2Easp%3F,65,25,1,1,588,125,1,0,1
+,Medium,1295,1295,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FTemplatize%2Easp%3Fitem%3Dhtml%2Fabout%2Ehtml,95,55,1,1,186,56,1,2,1
+,High,497,497,Other,GET,http://testasp.vulnweb.com/avatars/noavatar.gif,47,0,0,2,225,142,1,0,0
+,Medium,693,693,Security Misconfiguration,GET,http://testasp.vulnweb.com/avatars/noavatar.gif,47,0,0,2,452,385,1,2,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/avatars/noavatar.gif,47,0,0,2,291,118,1,2,0
+,High,497,497,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D1,73,35,1,1,225,142,1,0,0
+,Medium,497,497,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D1,73,35,1,1,291,118,1,2,0
+,Medium,22,22,Path Traversal,GET,http://testasp.vulnweb.com/Templatize.asp?item=..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2F..%2FWindows%2Fsystem.ini,147,105,1,1,2190,3658,1,2,0
+,Low,22,22,Path Traversal,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,2190,3658,1,1,1
+,Medium,601,601,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=https%3A%2F%2F883753986924105674.owasp.org,86,49,1,1,795,2272,1,2,1
+,Medium,601,601,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=https%3A%2F%2F883753986924105674.owasp.org,87,49,1,1,795,2272,1,2,0
+,Low,89,89,SQL Injection,GET,http://testasp.vulnweb.com/Search.asp?tfSearch=ZAP%27,53,15,1,1,30,1035,1,1,0
+,Low,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,1,1
+,Low,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,1,1
+,Low,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,30,1035,1,1,1
+,Medium,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,2,1
+,Medium,89,89,SQL Injection,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,30,1035,1,2,1
+,Medium,311,311,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,49,60,1,2,1
+,High,16,16,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,361,57,1,0,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Default.asp,38,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Register.asp?RetURL=%2FDefault%2Easp%3F,66,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Login.asp?RetURL=/Default.asp?,57,19,1,2,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Search.asp,37,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Register.asp?RetURL=%2Fshowthread%2Easp%3Fid%3D3,75,35,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Images,33,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,POST,http://testasp.vulnweb.com/Login.asp?RetURL=%2FDefault%2Easp%3F,63,26,1,1,214,0,1,2,1
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/Logout.asp?RetURL=%2FDefault%2Easp%3F,64,26,1,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
+,Medium,0,0,Other,GET,http://testasp.vulnweb.com/avatars,34,0,0,1,214,0,1,2,0
