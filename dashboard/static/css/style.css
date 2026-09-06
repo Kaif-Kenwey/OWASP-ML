@@ -180,9 +180,11 @@ body {
     flex-wrap: wrap;
 }
 
+.grid-2 > * { min-width: 0; }
+
 .grid-2 {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 20px;
     align-items: stretch;
 }
@@ -311,9 +313,19 @@ code {
     padding: 9px 2px;
     border-bottom: 1px solid var(--line);
     font-size: 13.5px;
+    min-width: 0; /* let the item shrink inside its grid column */
 }
 
+/* long paths (e.g. deep path-traversal payloads) must never stretch the card */
 .url-item:last-child { border-bottom: none; }
+
+.url-item .url-path,
+.url-item code,
+.url-item span:last-child {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    min-width: 0;
+}
 
 .sev-dot {
     width: 9px;

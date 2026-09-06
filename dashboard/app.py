@@ -97,6 +97,12 @@ def truncate(text, limit=140):
 # ===============================
 # DASHBOARD ROUTE
 # ===============================
+def shorten_label(text, max_len=18):
+    """Trim long axis labels so Chart.js never clips them on the left."""
+    text = str(text)
+    return text if len(text) <= max_len else text[: max_len - 1].rstrip() + "…"
+
+
 @app.route("/")
 def dashboard():
     df = load_data()
@@ -139,8 +145,8 @@ def dashboard():
             "labels": ["Critical", "High", "Medium", "Low", "Informational"],
             "values": [critical_count, high_count, medium_count, low_count, informational_count],
         },
-        "attack": {"labels": list(attack_counts.index), "values": [int(v) for v in attack_counts.values]},
-        "owasp": {"labels": list(owasp_counts.index), "values": [int(v) for v in owasp_counts.values]},
+        "attack": {"labels": [shorten_label(a) for a in attack_counts.index], "values": [int(v) for v in attack_counts.values]},
+        "owasp": {"labels": [shorten_label(a) for a in owasp_counts.index], "values": [int(v) for v in owasp_counts.values]},
         "method": {"labels": list(method_counts.index), "values": [int(v) for v in method_counts.values]},
     }
 
