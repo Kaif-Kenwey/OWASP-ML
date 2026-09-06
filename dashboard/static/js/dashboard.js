@@ -1497,3 +1497,243 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         }
     }
+
+    // =====================================================
+    // TOAST NOTIFICATION SYSTEM (reusable feedback)
+    // =====================================================
+    // Usage: window.showToast({ type: 'ok'|'info'|'warn'|'err', title, msg, timeout })
+    window.showToast = function (opts) {
+        var stack = document.getElementById("toastStack");
+        if (!stack) return;
+        opts = opts || {};
+        var type = opts.type || "info";
+        var icons = {
+            ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>',
+            info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+            warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+            err: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+        };
+        var t = document.createElement("div");
+        t.className = "toast " + type;
+        t.innerHTML = '<span class="t-ico">' + (icons[type] || icons.info) + '</span>' +
+            '<div class="t-body">' + (opts.title ? '<div class="t-title">' + opts.title + '</div>' : '') +
+            (opts.msg ? '<div class="t-msg">' + opts.msg + '</div>' : '') + '</div>' +
+            '<button class="t-close" aria-label="close">×</button>';
+        stack.appendChild(t);
+        requestAnimationFrame(function () { t.classList.add("show"); });
+        var timeout = opts.timeout || 3500;
+        var remove = function () {
+            t.classList.remove("show");
+            setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 300);
+        };
+        t.querySelector(".t-close").addEventListener("click", remove);
+        if (timeout > 0) setTimeout(remove, timeout);
+        return t;
+    };
+
+    // wire existing export/copy actions to toasts
+    var exportFilteredBtn = document.getElementById("exportFilteredBtn");
+    if (exportFilteredBtn) {
+        var origExport = exportFilteredBtn.onclick;
+        exportFilteredBtn.addEventListener("click", function () {
+            // give a moment for the export to fire, then toast
+            setTimeout(function () {
+                window.showToast({ type: "ok", title: "CSV exported", msg: "Filtered findings downloaded.", timeout: 3000 });
+            }, 200);
+        }, { capture: false });
+    }
+    var exportJsonBtn = document.getElementById("exportJsonBtn");
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener("click", function () {
+            setTimeout(function () {
+                window.showToast({ type: "ok", title: "JSON exported", msg: "Filtered findings downloaded as JSON.", timeout: 3000 });
+            }, 200);
+        });
+    }
+
+    // =====================================================
+    // REPORTS: EXPANDABLE ROW (inline quick-preview)
+    // =====================================================
+    // Adds an expand-toggle to the finding cell; clicking it opens an inline
+    // expand-row beneath the clicked row showing key details + remediation,
+    // without needing to open the full drawer.
+    if (reportBody) {
+        // inject the expand toggle into each finding cell
+        reportBody.querySelectorAll("tr.report-row").forEach(function (row) {
+            var cell = row.querySelector(".finding-cell");
+            if (!cell || cell.querySelector(".expand-toggle")) return;
+            var toggle = document.createElement("span");
+            toggle.className = "expand-toggle";
+            toggle.textContent = "▸";
+            toggle.title = "expand inline preview";
+            cell.insertBefore(toggle, cell.firstChild);
+        });
+        // delegated click for expand toggles
+        reportBody.addEventListener("click", function (e) {
+            var toggle = e.target.closest(".expand-toggle");
+            if (!toggle) return;
+            e.stopPropagation();
+            var row = toggle.closest("tr.report-row");
+            if (!row) return;
+            var expanded = row.classList.toggle("expanded");
+            toggle.textContent = expanded ? "▾" : "▸";
+            // remove any existing expand-row below this row
+            var next = row.nextElementSibling;
+            if (next && next.classList.contains("expand-row") && !expanded) {
+                next.remove();
+                return;
+            }
+            if (!expanded) return;
+            // build the expand row
+            var f = {};
+            try { f = JSON.parse(row.dataset.finding || "{}"); } catch (e2) {}
+            var expandRow = document.createElement("tr");
+            expandRow.className = "expand-row";
+            var remediation = f.remediation || {};
+            var fixHtml = (remediation.fix || "Refer to OWASP guidelines.").split("\n").filter(function (s) { return s.trim(); }).map(function (s) { return "<li>" + s.replace(/^\d+\)\s*/, "") + "</li>"; }).join("");
+            expandRow.innerHTML = '<td colspan="12"><div class="expand-content">' +
+                '<div class="ec-section">' +
+                '<h5>Finding details</h5>' +
+                '<div class="ec-kv">' +
+                '<span class="k">Finding ID</span><span class="v">' + (f.finding_id || "—") + '</span>' +
+                '<span class="k">Alert</span><span class="v">' + (f.alert_name || "—") + '</span>' +
+                '<span class="k">Endpoint</span><span class="v">' + (f.url || "—") + '</span>' +
+                '<span class="k">Method</span><span class="v">' + (f.method || "—") + '</span>' +
+                '<span class="k">CWE</span><span class="v">' + (f.cwe || "—") + '</span>' +
+                '<span class="k">Scanner risk</span><span class="v">' + (f.scanner_risk || "—") + '</span>' +
+                '<span class="k">ML prediction</span><span class="v">' + (f.ml_prediction || "—") + '</span>' +
+                '<span class="k">Hybrid score</span><span class="v">' + (f.hybrid_score || 0).toFixed(3) + '</span>' +
+                '<span class="k">Detection</span><span class="v">' + (f.detection_rule || "—") + '</span>' +
+                '</div></div>' +
+                '<div class="ec-section">' +
+                '<h5>Remediation</h5>' +
+                '<div class="ec-remediation"><strong>Why:</strong> ' + (remediation.why_it_matters || "—") + '<br>' +
+                '<strong>Impact:</strong> ' + (remediation.impact || "—") + '<br>' +
+                '<strong>Fix:</strong><ol style="margin:4px 0 0 18px;padding:0;">' + fixHtml + '</ol>' +
+                '<strong>Best practice:</strong> ' + (remediation.best_practice || "—") + '</div>' +
+                '</div></div></td>';
+            row.parentNode.insertBefore(expandRow, row.nextSibling);
+        });
+    }
+
+    // =====================================================
+    // ML INSIGHTS: CM CELL HOVER TOOLTIP WITH EXACT VALUES
+    // =====================================================
+    document.querySelectorAll(".cm-cell[data-actual]").forEach(function (cell) {
+        cell.addEventListener("mouseenter", function (e) {
+            var tip = document.getElementById("styledTip");
+            if (!tip) return;
+            var actual = cell.dataset.actual, predicted = cell.dataset.predicted;
+            var val = cell.textContent.trim();
+            var isDiag = actual === predicted;
+            tip.innerHTML = '<strong>' + val + '</strong> finding(s)<br>' +
+                'actual: ' + actual + '<br>predicted: ' + predicted + '<br>' +
+                (isDiag ? '<span style="color:var(--green)">correct prediction</span>' : '<span style="color:var(--high)">misclassification</span>') +
+                '<br><em style="color:var(--ink-faint)">click to inspect</em>';
+            tip.classList.add("show");
+            var r = cell.getBoundingClientRect();
+            var x = r.left + 10, y = r.bottom + 8;
+            if (x + 280 > window.innerWidth) x = window.innerWidth - 290;
+            tip.style.left = x + "px"; tip.style.top = y + "px";
+        });
+        cell.addEventListener("mouseleave", function () {
+            var tip = document.getElementById("styledTip");
+            if (tip) tip.classList.remove("show");
+        });
+    });
+
+    // =====================================================
+    // REPORTS: BULK SELECT + EXPORT SELECTED
+    // =====================================================
+    // (checkbox column is added by JS so the server-rendered table stays clean)
+    var reportTableEl2 = document.getElementById("reportTable");
+    if (reportTableEl2 && reportBody) {
+        // inject checkbox column header + cells
+        var thead = reportTableEl2.querySelector("thead tr");
+        if (thead && !thead.querySelector("th.col-select")) {
+            var selTh = document.createElement("th");
+            selTh.className = "col-select";
+            selTh.innerHTML = '<input type="checkbox" id="selectAllVisible" title="select all visible">';
+            thead.insertBefore(selTh, thead.firstChild);
+        }
+        reportBody.querySelectorAll("tr.report-row").forEach(function (row) {
+            if (row.querySelector("td.col-select")) return;
+            var selTd = document.createElement("td");
+            selTd.className = "col-select";
+            selTd.innerHTML = '<input type="checkbox" class="row-select" data-finding-id="' + (row.dataset.finding ? "" : "") + '">';
+            row.insertBefore(selTd, row.firstChild);
+        });
+        // select-all-visible
+        var selectAll = document.getElementById("selectAllVisible");
+        if (selectAll) {
+            selectAll.addEventListener("change", function () {
+                reportBody.querySelectorAll("tr.report-row").forEach(function (row) {
+                    if (row.dataset._filterShow === "true") {
+                        var cb = row.querySelector(".row-select");
+                        if (cb) cb.checked = selectAll.checked;
+                    }
+                });
+                updateBulkBar();
+            });
+        }
+        // individual checkbox -> update bulk bar
+        reportBody.addEventListener("change", function (e) {
+            if (e.target.classList.contains("row-select")) updateBulkBar();
+        });
+    }
+    function updateBulkBar() {
+        var checked = document.querySelectorAll(".row-select:checked");
+        var bar = document.getElementById("bulkBar");
+        if (!bar) {
+            if (checked.length === 0) return;
+            bar = document.createElement("div");
+            bar.className = "bulk-bar"; bar.id = "bulkBar";
+            bar.innerHTML = '<span class="bb-count">0</span> selected ' +
+                '<button class="bb-btn" id="bulkExportCsv">Export selected CSV</button>' +
+                '<button class="bb-btn" id="bulkExportJson">Export selected JSON</button>' +
+                '<button class="bb-btn bb-clear" id="bulkClear">Clear</button>';
+            var tableCard = document.querySelector(".table-card");
+            if (tableCard) tableCard.parentNode.insertBefore(bar, tableCard.nextSibling);
+        }
+        bar.querySelector(".bb-count").textContent = checked.length;
+        bar.style.display = checked.length > 0 ? "flex" : "none";
+        if (checked.length === 0) return;
+        document.getElementById("bulkExportCsv").onclick = function () {
+            var rows = [];
+            checked.forEach(function (cb) {
+                var row = cb.closest("tr.report-row");
+                if (row && row.dataset.finding) { try { rows.push(JSON.parse(row.dataset.finding)); } catch (e) {} }
+            });
+            exportRowsAsCSV(rows, "owasp_ml_selected_" + rows.length + "rows.csv");
+            window.showToast({ type: "ok", title: "CSV exported", msg: rows.length + " selected findings downloaded.", timeout: 3000 });
+        };
+        document.getElementById("bulkExportJson").onclick = function () {
+            var rows = [];
+            checked.forEach(function (cb) {
+                var row = cb.closest("tr.report-row");
+                if (row && row.dataset.finding) { try { rows.push(JSON.parse(row.dataset.finding)); } catch (e) {} }
+            });
+            var blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+            downloadBlob(blob, "owasp_ml_selected_" + rows.length + "rows.json");
+            window.showToast({ type: "ok", title: "JSON exported", msg: rows.length + " selected findings downloaded.", timeout: 3000 });
+        };
+        document.getElementById("bulkClear").onclick = function () {
+            checked.forEach(function (cb) { cb.checked = false; });
+            updateBulkBar();
+        };
+    }
+    function exportRowsAsCSV(rows, filename) {
+        var cols = ["finding_id", "severity", "scanner_risk", "ml_prediction", "classifier_confidence",
+                    "anomaly_score", "hybrid_score", "attack_type", "owasp", "cwe", "method", "path", "url",
+                    "alert_name", "confidence", "detection_rule", "correlation_id", "explanation"];
+        var esc = function (v) { v = (v === null || v === undefined) ? "" : String(v); if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"'; return v; };
+        var lines = [cols.join(",")];
+        rows.forEach(function (r) { lines.push(cols.map(function (c) { return esc(r[c]); }).join(",")); });
+        downloadBlob(new Blob([lines.join("\n")], { type: "text/csv" }), filename);
+    }
+    function downloadBlob(blob, filename) {
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement("a"); a.href = url; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    }
