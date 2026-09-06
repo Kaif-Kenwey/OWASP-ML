@@ -5,44 +5,59 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}OWASP-ML{% endblock %} · OWASP-ML</title>
 
-    <!-- Poppins stays — it was the original identity of the dashboard -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}{{ qp }}">
 
-    <!-- Chart.js from CDN, same as the original setup -->
+    <!-- Chart.js from CDN (kept from the original setup) -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <div class="sidebar">
-    <a class="brand" href="/">
-        <svg class="brand-shield" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+    <a class="brand" href="/{{ qp }}">
+        <svg class="brand-shield" viewBox="0 0 24 24" width="24" height="22" aria-hidden="true">
             <path d="M12 2 L20 5 V11 C20 16.5 16.7 20.6 12 22 C7.3 20.6 4 16.5 4 11 V5 Z"
                   fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
             <path d="M8.5 11.5 L11 14 L15.5 9" fill="none" stroke="currentColor"
                   stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <span>OWASP-ML</span>
+        <span>OWASP-ML<small>Detection Eng.</small></span>
     </a>
 
+    <div class="sidebar-tag">Navigation</div>
     <nav class="nav">
-        <a class="nav-item {% if request.path == '/' %}active{% endif %}" href="/">Dashboard</a>
-        <a class="nav-item {% if request.path == '/ml-insights' %}active{% endif %}" href="/ml-insights">ML Insights</a>
-        <a class="nav-item {% if request.path == '/reports' %}active{% endif %}" href="/reports">Reports</a>
-        <a class="nav-item nav-download" href="/download-report">Download CSV</a>
+        <a class="nav-item {% if request.path == '/' %}active{% endif %}" href="/{{ qp }}">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+            Command Center
+        </a>
+        <a class="nav-item {% if request.path == '/ml-insights' %}active{% endif %}" href="/ml-insights{{ qp }}">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+            ML Insights
+        </a>
+        <a class="nav-item {% if request.path == '/reports' %}active{% endif %}" href="/reports{{ qp }}">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+            Findings
+        </a>
+        <a class="nav-item nav-download" href="/download-report{{ qp }}">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+            Export CSV
+        </a>
     </nav>
 
     <div class="sidebar-foot">
-        <span class="foot-dot"></span> ZAP + ML pipeline
+        <div class="sysline"><span class="foot-dot"></span> pipeline online</div>
+        <div class="sysline faint">SIEM-inspired detection</div>
+        <div class="sysline faint">RF + IsolationForest</div>
     </div>
 </div>
 
 <div class="main">
     <header class="topbar">
         <div class="topbar-titles">
-            <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
-            <p class="source-hint">Source: data/threat_report.csv</p>
+            <h1>{% block page_title %}{% endblock %}</h1>
+            <p>{% block page_subtitle %}source: data/threat_report.csv{% endblock %}</p>
         </div>
         <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
     </header>
@@ -52,10 +67,11 @@
     </main>
 
     <footer class="footer">
-        OWASP-ML — Detection Engineering with SIEM + ML · Author: Mohammad Kaif
+        <span>OWASP-ML — Detection Engineering + Security Analytics · Author: Mohammad Kaif</span>
+        <span>v3 · SOC dashboard</span>
     </footer>
 </div>
 
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}{{ qp }}"></script>
 </body>
 </html>

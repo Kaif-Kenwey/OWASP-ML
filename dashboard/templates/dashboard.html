@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard{% endblock %}
-{% block page_title %}Threat Intelligence Dashboard{% endblock %}
+{% block title %}Command Center{% endblock %}
+{% block page_title %}AI-Powered Detection Engineering Platform{% endblock %}
+{% block page_subtitle %}Security Analytics · ML Risk Scoring · Threat Intelligence{% endblock %}
 
 {% block content %}
 
@@ -10,52 +11,126 @@
 <div class="card empty-state">
     <div class="empty-glyph">🛡</div>
     <h2>No scan data yet</h2>
-    <p>
-        The dashboard reads <code>data/threat_report.csv</code>, which is produced by the
-        ZAP + ML pipeline. Run a demo scan to generate it, then refresh this page.
-    </p>
+    <p>The command center reads <code>data/threat_report.csv</code>, which is produced by the
+       ZAP + ML + detection pipeline. Run a demo scan to generate it, then refresh this page.</p>
     <p class="empty-command">python run_pipeline.py --demo</p>
 </div>
 
 {% else %}
 
+<!-- ================= HERO + SYSTEM STATUS ================= -->
+<div class="hero">
+    <div>
+        <div class="hero-title">OWASP-ML <span class="accent">//</span> Security Operations Console</div>
+        <div class="hero-sub">SIEM-INSPIRED DETECTION ENGINEERING · {{ total }} FINDINGS ANALYZED</div>
+    </div>
+    <div class="status-row">
+        <span class="status-chip {% if status.scanner_ready %}ok{% else %}down{% endif %}">
+            <span class="dot"></span> Scanner {% if status.scanner_ready %}Ready{% else %}Offline{% endif %}
+        </span>
+        <span class="status-chip {% if status.ml_ready %}ok{% else %}warn{% endif %}">
+            <span class="dot"></span> ML Engine {% if status.ml_ready %}Ready{% else %}Standby{% endif %}
+        </span>
+        <span class="status-chip {% if status.detection_ready %}ok{% else %}warn{% endif %}">
+            <span class="dot"></span> Detection Engine {% if status.detection_ready %}Ready{% else %}Idle{% endif %}
+        </span>
+        <span class="status-chip {% if status.ai_ready %}ok{% else %}warn{% endif %}">
+            <span class="dot"></span> AI Analyst {% if status.ai_ready %}Ready{% else %}Fallback{% endif %}
+        </span>
+    </div>
+</div>
+
 <!-- ================= KPI ROW ================= -->
 <div class="kpi-row">
     <div class="kpi kpi-critical">
-        <span class="kpi-count">{{ critical_count }}</span>
-        <span class="kpi-label">Critical</span>
+        <div class="kpi-top"><span class="kpi-label">Critical</span><span class="kpi-ico">⚠</span></div>
+        <span class="kpi-count">{{ counts.Critical }}</span>
+        <span class="kpi-pct">{{ percentages.Critical }}% of findings</span>
     </div>
     <div class="kpi kpi-high">
-        <span class="kpi-count">{{ high_count }}</span>
-        <span class="kpi-label">High</span>
+        <div class="kpi-top"><span class="kpi-label">High</span><span class="kpi-ico">!</span></div>
+        <span class="kpi-count">{{ counts.High }}</span>
+        <span class="kpi-pct">{{ percentages.High }}% of findings</span>
     </div>
     <div class="kpi kpi-medium">
-        <span class="kpi-count">{{ medium_count }}</span>
-        <span class="kpi-label">Medium</span>
+        <div class="kpi-top"><span class="kpi-label">Medium</span><span class="kpi-ico">▲</span></div>
+        <span class="kpi-count">{{ counts.Medium }}</span>
+        <span class="kpi-pct">{{ percentages.Medium }}% of findings</span>
     </div>
     <div class="kpi kpi-low">
-        <span class="kpi-count">{{ low_count }}</span>
-        <span class="kpi-label">Low</span>
+        <div class="kpi-top"><span class="kpi-label">Low</span><span class="kpi-ico">●</span></div>
+        <span class="kpi-count">{{ counts.Low }}</span>
+        <span class="kpi-pct">{{ percentages.Low }}% of findings</span>
     </div>
-    <div class="kpi kpi-informational">
-        <span class="kpi-count">{{ informational_count }}</span>
-        <span class="kpi-label">Informational</span>
+    <div class="kpi kpi-info">
+        <div class="kpi-top"><span class="kpi-label">Informational</span><span class="kpi-ico">i</span></div>
+        <span class="kpi-count">{{ counts.Informational }}</span>
+        <span class="kpi-pct">{{ percentages.Informational }}% of findings</span>
+    </div>
+</div>
+
+<!-- ================= THREAT ACTIVITY + THREAT SCORE GAUGE ================= -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-head"><h2>Threat Activity</h2><span class="chip">{{ total }} findings</span></div>
+        <ul class="feed">
+            {% for t in threat_activity %}
+            <li>
+                <span class="badge {{ t.sev }}">{{ t.severity }} <span class="sigil">[!]</span></span>
+                <div class="feed-main">
+                    <span class="feed-alert">{{ t.alert_name }}</span>
+                    <span class="feed-meta">{{ t.attack_type }} · CWE-{{ t.cwe }} · {{ t.finding_id }}</span>
+                    <span class="feed-path">{{ t.path }}</span>
+                </div>
+                <span class="feed-score">{{ '%.2f' | format(t.hybrid_score) }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <div class="card">
+        <div class="card-head"><h2>Hybrid Threat Score</h2><span class="chip">avg {{ avg_score }}</span></div>
+        <div class="gauge-wrap">
+            <div class="gauge">
+                <svg viewBox="0 0 180 110">
+                    <path d="M 15 100 A 75 75 0 0 1 165 100" fill="none" stroke="#1e293b" stroke-width="12" stroke-linecap="round"/>
+                    <path id="gaugeArc" d="M 15 100 A 75 75 0 0 1 165 100" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" stroke-dasharray="235" stroke-dashoffset="235"/>
+                    <defs>
+                        <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stop-color="#34d399"/>
+                            <stop offset="50%" stop-color="#f59e0b"/>
+                            <stop offset="100%" stop-color="#f43f5e"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div class="gauge-val">
+                    <span class="num" id="gaugeNum">{{ '%.0f' | format(avg_score * 100) }}</span>
+                    <span class="lbl">avg score</span>
+                </div>
+            </div>
+            <div class="gauge-legend">
+                <span>scale 0..1</span><span>·</span><span>not a probability</span>
+            </div>
+        </div>
+        <div style="margin-top:14px;">
+            <div class="card-head"><h2 style="font-size:11px;">Score Distribution</h2></div>
+            <div class="chart-box chart-box-short"><canvas id="scoreBucketChart"></canvas></div>
+        </div>
     </div>
 </div>
 
 <!-- ================= AI ANALYST ================= -->
 <div class="card ai-panel">
     <div class="card-head">
-        <h2>AI Analyst</h2>
-        {% if ai_summary %}
-        <span class="chip">Avg ML confidence: {{ avg_confidence }}%</span>
-        {% endif %}
+        <h2>AI Security Analyst</h2>
+        {% if ai_summary %}<span class="chip">{{ ai_summary.generated_by | default("rule-based fallback") }}</span>{% endif %}
     </div>
 
     {% if ai_summary %}
         <p class="ai-summary">{{ ai_summary.executive_summary }}</p>
 
         {% if ai_summary.recommendations %}
+        <div style="margin-bottom:6px;"><h2 style="font-size:11px;">Priority Actions</h2></div>
         <ol class="ai-recs">
             {% for rec in ai_summary.recommendations %}
             <li>{{ rec }}</li>
@@ -63,11 +138,11 @@
         </ol>
         {% endif %}
 
-        <p class="ai-footnote">Generated by {{ ai_summary.generated_by | default("the rule-based fallback") }}</p>
+        <p class="ai-footnote"><span class="ai-dot"></span> Analyst layer — summarizes deterministic pipeline output; cannot override Final_Risk.</p>
     {% else %}
         <p class="ai-empty">
-            No AI summary found (<code>data/ai_summary.json</code> missing). Re-run the
-            pipeline to generate one — it works offline via the rule-based fallback:
+            No AI summary found (<code>data/ai_summary.json</code> missing). Re-run the pipeline —
+            the rule-based fallback works fully offline:
         </p>
         <p class="empty-command">python run_pipeline.py --demo</p>
     {% endif %}
@@ -76,31 +151,93 @@
 <!-- ================= RISK + ATTACK CHARTS ================= -->
 <div class="grid-2">
     <div class="card chart-card">
-        <h2>Final Risk Distribution</h2>
-        <div class="chart-box">
-            <canvas id="riskChart"></canvas>
+        <div class="card-head"><h2>Final Risk Distribution</h2></div>
+        <div class="chart-box"><canvas id="riskChart"></canvas></div>
+    </div>
+    <div class="card chart-card">
+        <div class="card-head"><h2>Top Attack Types</h2></div>
+        <div class="chart-box"><canvas id="attackChart"></canvas></div>
+    </div>
+</div>
+
+<!-- ================= ATTACK MATRIX ================= -->
+<div class="card">
+    <div class="card-head"><h2>Attack Matrix — Attack Type × Risk</h2><span class="muted small">heatmap intensity = finding count</span></div>
+    {% if attack_matrix.rows %}
+    <div class="table-wrap">
+        <table class="matrix-table">
+            <thead>
+                <tr>
+                    <th class="row-label">Attack Type</th>
+                    {% for c in attack_matrix.cols %}<th>{{ c }}</th>{% endfor %}
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in attack_matrix.rows %}
+                <tr>
+                    <th class="row-label">{{ row.attack }}</th>
+                    {% for c in attack_matrix.cols %}
+                        {% set v = row.values[loop.index0] %}
+                        <td class="matrix-cell {% if v == 0 %}empty{% endif %}" {% if v != 0 %}data-sev="{{ c }}"{% endif %}>{{ v }}</td>
+                    {% endfor %}
+                    <td class="matrix-cell empty">{{ row.total }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p class="muted">No attack-type data available.</p>
+    {% endif %}
+</div>
+
+<!-- ================= DETECTION RULES + CORRELATION ================= -->
+<div class="grid-2">
+    <div class="card">
+        <div class="card-head"><h2>Detection Rules Triggered</h2><span class="chip">{{ detection_summary | selectattr('triggered') | list | length }} active</span></div>
+        {% for d in detection_summary %}
+        <div class="rule-row" data-rule="{{ d.rule_id }}">
+            <span class="rule-id">{{ d.rule_id }}</span>
+            <div>
+                <div class="rule-name">{{ d.name }} <span class="badge {{ d.severity | lower }}">{{ d.severity }}</span></div>
+                <div class="rule-desc">{{ d.description }}</div>
+            </div>
+            <span class="rule-count {% if d.triggered == 0 %}zero{% endif %}">{{ d.triggered }}</span>
         </div>
+        {% endfor %}
     </div>
 
-    <div class="card chart-card">
-        <h2>Top Attack Types</h2>
-        <div class="chart-box">
-            <canvas id="attackChart"></canvas>
+    <div class="card">
+        <div class="card-head"><h2>Correlated Threats</h2><span class="chip">{{ correlation_events | length }} events</span></div>
+        {% if correlation_events %}
+        {% for c in correlation_events %}
+        <div class="corr-row">
+            <span class="corr-id">{{ c.correlation_id }}</span>
+            <div style="min-width:0;">
+                <div class="corr-endpoint">{{ c.endpoint }}</div>
+                <div class="corr-meta">{{ c.attack_types }} · {{ c.n_findings }} findings</div>
+            </div>
+            <div style="text-align:right;">
+                <div class="corr-score">{{ c.score }}</div>
+                <span class="badge {{ c.sev }}">{{ c.severity }}</span>
+            </div>
         </div>
+        {% endfor %}
+        {% else %}
+        <p class="muted">No correlated events (few endpoints had &gt;= 2 findings).</p>
+        {% endif %}
     </div>
 </div>
 
 <!-- ================= OWASP + TOP URLS ================= -->
 <div class="grid-2">
     <div class="card chart-card">
-        <h2>OWASP Categories</h2>
-        <div class="chart-box">
-            <canvas id="owaspChart"></canvas>
-        </div>
+        <div class="card-head"><h2>OWASP Top 10 Categories</h2></div>
+        <div class="chart-box"><canvas id="owaspChart"></canvas></div>
     </div>
-
     <div class="card">
-        <h2>Top Vulnerable URLs <span class="muted">(High + Critical)</span></h2>
+        <div class="card-head"><h2>Top Vulnerable Endpoints <span class="muted small">(High + Critical)</span></h2></div>
         {% if top_urls %}
         <ul class="url-list">
             {% for u in top_urls %}
@@ -117,12 +254,10 @@
     </div>
 </div>
 
-<!-- ================= METHOD DISTRIBUTION ================= -->
+<!-- ================= HTTP METHOD DISTRIBUTION ================= -->
 <div class="card chart-card">
-    <h2>HTTP Method Distribution</h2>
-    <div class="chart-box chart-box-short">
-        <canvas id="methodChart"></canvas>
-    </div>
+    <div class="card-head"><h2>HTTP Method Distribution</h2></div>
+    <div class="chart-box chart-box-short"><canvas id="methodChart"></canvas></div>
 </div>
 
 <!-- Chart payloads rendered by app.py, consumed by dashboard.js -->

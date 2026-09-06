@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 
 {% block title %}ML Insights{% endblock %}
-{% block page_title %}ML Insights{% endblock %}
+{% block page_title %}ML Insights — Model Evaluation{% endblock %}
+{% block page_subtitle %}source: models/training_metrics.json · honest evaluation, not a generalization claim{% endblock %}
 
 {% block content %}
 
@@ -9,7 +10,7 @@
 {% if metrics and metrics.classifier_trained %}
 <div class="banner banner-ok">
     <strong>Model trained.</strong> Metrics below were persisted by the last training run
-    (<code>models/training_metrics.json</code>).
+    (<code>models/training_metrics.json</code>). <span class="mono">random_state=42</span>.
 </div>
 {% else %}
 <div class="banner banner-warn">
@@ -19,82 +20,96 @@
 </div>
 {% endif %}
 
-{% if metrics %}
+{% if headline %}
 
 <!-- ================= HEADLINE METRICS ================= -->
 <div class="kpi-row">
     <div class="kpi kpi-accent">
-        <span class="kpi-count">{{ '%.1f' | format((accuracy or 0) * 100) }}%</span>
-        <span class="kpi-label">Accuracy</span>
+        <div class="kpi-top"><span class="kpi-label">Accuracy</span><span class="kpi-ico">◎</span></div>
+        <span class="kpi-count">{{ '%.1f' | format((headline.accuracy or 0) * 100) }}%</span>
+        <span class="kpi-pct">holdout · n={{ headline.dataset_rows | default(0) }}</span>
     </div>
     <div class="kpi kpi-accent">
-        <span class="kpi-count">{{ '%.2f' | format(macro_f1 or 0) }}</span>
-        <span class="kpi-label">Macro Avg F1</span>
+        <div class="kpi-top"><span class="kpi-label">Macro F1</span><span class="kpi-ico">M</span></div>
+        <span class="kpi-count">{{ '%.3f' | format(headline.f1_macro or 0) }}</span>
+        <span class="kpi-pct">macro avg</span>
+    </div>
+    <div class="kpi kpi-accent">
+        <div class="kpi-top"><span class="kpi-label">Weighted F1</span><span class="kpi-ico">W</span></div>
+        <span class="kpi-count">{{ '%.3f' | format(headline.f1_weighted or 0) }}</span>
+        <span class="kpi-pct">support-weighted</span>
     </div>
     <div class="kpi kpi-neutral">
-        <span class="kpi-count">{{ metrics.dataset_rows | default(0) }}</span>
-        <span class="kpi-label">Dataset Rows</span>
+        <div class="kpi-top"><span class="kpi-label">Dataset Rows</span><span class="kpi-ico">≡</span></div>
+        <span class="kpi-count">{{ headline.dataset_rows | default(0) }}</span>
+        <span class="kpi-pct">single scan</span>
     </div>
     <div class="kpi kpi-neutral">
-        <span class="kpi-count">{{ feature_count }}</span>
-        <span class="kpi-label">Features</span>
+        <div class="kpi-top"><span class="kpi-label">Features</span><span class="kpi-ico">f</span></div>
+        <span class="kpi-count">{{ headline.feature_count | default(0) }}</span>
+        <span class="kpi-pct">engineered</span>
     </div>
 </div>
 
-<div class="grid-2">
+<!-- ================= DISCLAIMER ================= -->
+<div class="banner banner-info">
+    <strong>Read these numbers with care.</strong>
+    Evaluation is based on a random holdout of a <em>single</em> scanner-labelled scan. The
+    labels come from ZAP's own risk field, so the metrics measure agreement with the scanner —
+    <strong>not</strong> real-world vulnerability detection accuracy. See the disclaimer at the bottom of this page.
+</div>
 
+<div class="grid-2">
     <!-- ================= PER-CLASS REPORT ================= -->
     <div class="card">
-        <h2>Per-Class Performance</h2>
+        <div class="card-head"><h2>Per-Class Performance</h2></div>
         <div class="table-wrap">
             <table class="data-table">
                 <thead>
-                    <tr>
-                        <th>Risk Class</th>
-                        <th>Precision</th>
-                        <th>Recall</th>
-                        <th>F1</th>
-                        <th>Support</th>
-                    </tr>
+                    <tr><th>Risk Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr>
                 </thead>
                 <tbody>
                     {% for row in class_rows %}
                     <tr>
-                        <td>{{ row.label }}</td>
+                        <td><span class="badge {{ row.label | lower }}">{{ row.label }}</span></td>
                         <td>{{ '%.2f' | format(row.precision or 0) }}</td>
                         <td>{{ '%.2f' | format(row.recall or 0) }}</td>
                         <td>{{ '%.2f' | format(row.f1 or 0) }}</td>
-                        <td>{{ '%.0f' | format(row.support or 0) }}</td>
+                        <td class="mono">{{ '%.0f' | format(row.support or 0) }}</td>
                     </tr>
                     {% endfor %}
-                    {% if macro_f1 %}
-                    <tr class="row-total">
-                        <td>Macro Avg</td>
-                        <td>{{ '%.2f' | format(metrics.classification_report['macro avg'].precision | default(0)) }}</td>
-                        <td>{{ '%.2f' | format(metrics.classification_report['macro avg'].recall | default(0)) }}</td>
-                        <td>{{ '%.2f' | format(macro_f1) }}</td>
-                        <td>{{ '%.0f' | format(metrics.classification_report['macro avg'].support | default(0)) }}</td>
-                    </tr>
-                    {% endif %}
                 </tbody>
             </table>
         </div>
+        {% if headline.roc_auc_weighted is not none %}
+        <p class="small muted" style="margin-top:12px;">
+            Weighted OvR ROC-AUC: <span class="code">{{ '%.3f' | format(headline.roc_auc_weighted) }}</span>
+            — computed conditionally (&gt;= 2 classes, &gt;= 20 test samples). On a {{ headline.dataset_rows }}-row holdout this is indicative, not robust.
+        </p>
+        {% else %}
+        <p class="small muted" style="margin-top:12px;">
+            ROC-AUC: <span class="code">{{ headline.roc_auc_note or 'not computed' }}</span>
+        </p>
+        {% endif %}
+        <p class="small muted">
+            Precision (weighted): <span class="code">{{ '%.3f' | format(headline.precision_weighted or 0) }}</span> ·
+            Recall (weighted): <span class="code">{{ '%.3f' | format(headline.recall_weighted or 0) }}</span> ·
+            Stratified: <span class="code">{{ headline.stratified }}</span>
+        </p>
     </div>
 
     <!-- ================= CONFUSION MATRIX ================= -->
     <div class="card">
-        <h2>Confusion Matrix</h2>
+        <div class="card-head"><h2>Confusion Matrix</h2></div>
         {% if metrics.confusion_matrix %}
         {% set cm = metrics.confusion_matrix %}
-        <p class="muted small">Rows = actual class, columns = predicted class.</p>
+        <p class="muted small">Rows = actual, columns = predicted.</p>
         <div class="table-wrap">
             <table class="cm-table">
                 <thead>
                     <tr>
                         <th class="cm-corner">actual ↓ / pred →</th>
-                        {% for label in cm_labels %}
-                        <th>{{ label }}</th>
-                        {% endfor %}
+                        {% for label in cm_labels %}<th>{{ label }}</th>{% endfor %}
                     </tr>
                 </thead>
                 <tbody>
@@ -105,9 +120,9 @@
                         <th>{{ cm_labels[outer.index0] }}</th>
                         {% for val in row %}
                         {% set frac = (val / row_max) if row_max else 0 %}
-                        {% set alpha = frac if frac > 0.08 else (0.08 if val else 0) %}
+                        {% set alpha = frac if frac > 0.12 else (0.12 if val else 0) %}
                         <td class="cm-cell {% if outer.index0 == loop.index0 %}cm-diag{% endif %}"
-                            style="background: rgba({{ '22,163,110' if outer.index0 == loop.index0 else '220,80,60' }}, {{ alpha }});">
+                            style="background: rgba({{ '52,211,153' if outer.index0 == loop.index0 else '239,68,68' }}, {{ alpha }}); border-color: rgba({{ '52,211,153' if outer.index0 == loop.index0 else '239,68,68' }}, {{ (alpha + 0.2) | round(2) }});">
                             {{ val }}
                         </td>
                         {% endfor %}
@@ -120,41 +135,100 @@
         <p class="muted">No confusion matrix in the metrics file.</p>
         {% endif %}
     </div>
-
 </div>
 
+<!-- ================= FEATURE IMPORTANCE ================= -->
+{% if feature_importance %}
+<div class="card">
+    <div class="card-head"><h2>Feature Importance — RandomForest</h2><span class="chip">top {{ feature_importance | length }}</span></div>
+    <div style="max-height:340px; overflow-y:auto;">
+        {% set max_imp = feature_importance[0].importance if feature_importance else 1 %}
+        {% for f in feature_importance %}
+        <div class="fi-row">
+            <span class="fi-label" title="{{ f.feature }}">{{ f.feature }}</span>
+            <div class="fi-track"><span class="fi-fill" style="width: {{ (f.importance / max_imp * 100) | round(1) }}%;"></span></div>
+            <span class="fi-val">{{ '%.3f' | format(f.importance) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
 {% endif %}
 
-<!-- ================= PREDICTION BREAKDOWN (needs the CSV) ================= -->
-{% if has_data %}
-
-<div class="grid-2">
-    <div class="card chart-card">
-        <h2>ML Confidence Distribution</h2>
-        <div class="chart-box">
-            <canvas id="confBucketChart"></canvas>
+<!-- ================= MODEL ARCHITECTURE ================= -->
+<div class="card">
+    <div class="card-head"><h2>Model Architecture — Hybrid Threat Scoring</h2></div>
+    <div class="grid-3" style="gap:14px;">
+        <div class="kpi kpi-accent" style="border-left-color: var(--cyan);">
+            <span class="kpi-label">RandomForest Classifier</span>
+            <p class="small muted" style="margin:6px 0 0;">200 trees, max_depth=12 — predicts scanner risk class from engineered features.</p>
         </div>
-    </div>
-
-    <div class="card chart-card">
-        <h2>Scanner Risk vs ML Prediction</h2>
-        <div class="chart-box">
-            <canvas id="origPredChart"></canvas>
+        <div class="kpi kpi-accent" style="border-left-color: var(--green);">
+            <span class="kpi-label">IsolationForest Anomaly</span>
+            <p class="small muted" style="margin:6px 0 0;">200 trees, contamination=0.1 — flags statistically unusual alerts.</p>
+        </div>
+        <div class="kpi kpi-accent" style="border-left-color: var(--medium);">
+            <span class="kpi-label">Hybrid Score</span>
+            <p class="small muted" style="margin:6px 0 0;">0.6 × classifier + 0.3 × anomaly + 0.1 × static risk weight. <strong>Not a probability.</strong></p>
         </div>
     </div>
 </div>
 
-<script type="application/json" id="chart-data">{{ chart_data | safe }}</script>
+<!-- ================= CROSS-TARGET VALIDATION ================= -->
+{% if cross_target %}
+<div class="card">
+    <div class="card-head"><h2>Cross-Target Validation (leave-one-host-out)</h2>
+        {% if cross_target.available %}<span class="chip">{{ cross_target.host_distribution | length }} hosts</span>{% endif %}
+    </div>
+    {% if cross_target.available %}
+    <div class="table-wrap">
+        <table class="data-table">
+            <thead><tr><th>Held-out Host</th><th>Train</th><th>Test</th><th>Accuracy</th><th>Weighted F1</th><th>Macro F1</th></tr></thead>
+            <tbody>
+                {% for fold in cross_target.folds %}
+                <tr>
+                    <td class="mono">{{ fold.held_out_host }}</td>
+                    <td class="mono">{{ fold.train_samples }}</td>
+                    <td class="mono">{{ fold.test_samples }}</td>
+                    {% if fold.accuracy is defined %}
+                    <td>{{ '%.3f' | format(fold.accuracy) }}</td>
+                    <td>{{ '%.3f' | format(fold.weighted_f1) }}</td>
+                    <td>{{ '%.3f' | format(fold.macro_f1) }}</td>
+                    {% else %}
+                    <td colspan="3" class="muted">{{ fold.status | default('skipped') }}</td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <p class="small muted" style="margin-top:10px;">{{ cross_target.note }}</p>
+    {% else %}
+    <p class="muted">{{ cross_target.reason }}</p>
+    {% endif %}
+</div>
+{% endif %}
+
+<!-- ================= DISCLAIMER ================= -->
+<div class="card" style="border-left: 3px solid var(--medium);">
+    <div class="card-head"><h2>Academic Honesty — Limitations</h2></div>
+    <p class="small" style="line-height:1.7; color: var(--ink-soft);">
+        {{ metrics.disclaimer if metrics else '' }}
+        Evaluation is based on available scanner-labelled data and should not be interpreted as
+        real-world generalization accuracy. The classifier learns the scanner's risk labels, not
+        independent ground truth; mis-ratings in the scanner propagate to the model. The dataset
+        is a single scan of one deliberately vulnerable test site. Add genuinely new labeled scans
+        (targets you are authorized to test) under <code>data/sample/</code> and re-run to broaden
+        the evidence base.
+    </p>
+</div>
 
 {% elif not metrics %}
 
 <div class="card empty-state">
     <div class="empty-glyph">📊</div>
     <h2>Nothing to analyse yet</h2>
-    <p>
-        This page needs <code>models/training_metrics.json</code> and
-        <code>data/threat_report.csv</code>. Both are produced by the pipeline:
-    </p>
+    <p>This page needs <code>models/training_metrics.json</code> and
+       <code>data/threat_report.csv</code>. Both are produced by the pipeline:</p>
     <p class="empty-command">python run_pipeline.py --demo</p>
 </div>
 

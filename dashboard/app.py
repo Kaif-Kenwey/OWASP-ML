@@ -1,24 +1,97 @@
-from flask import Flask, render_template, send_file, redirect, url_for
-import pandas as pd
-import json
+"""
+OWASP-ML Flask dashboard server.
+
+Three pages + four JSON API endpoints:
+
+  Pages (server-rendered with Jinja):
+    /              SOC command center (KPIs, threat activity, detection rules,
+                   correlation, attack matrix, AI analyst, charts)
+    /ml-insights   Model evaluation, confusion matrix, feature importance,
+                   cross-target validation, disclaimer
+    /reports       Detailed findings table (sortable, filterable) + detail drawer
+
+  JSON API (clean separation of data from rendering):
+    /api/summary      dashboard headline summary
+    /api/findings     paginated + filterable findings
+    /api/detections   detection-rule matches
+    /api/correlations correlated security events
+
+All missing values pass through config.clean before reaching the templates,
+so the "nan" problem cannot recur. The dashboard reads generated files under
+data/, so run the pipeline at least once first (demo mode counts).
+"""
+
 import os
+import sys
+
+# When launched as `python dashboard/app.py` the script dir is on sys.path
+# but the repo root (which contains config/, ml/, detection/...) is not.
+# Add it so the absolute imports resolve.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+
+import json
 from urllib.parse import urlparse
+
+import pandas as pd
+from flask import Flask, render_template, send_file, redirect, url_for, request, jsonify
+
+from config.risks import (
+    RISK_ORDER,
+    normalize_risk,
+    risk_index,
+    SEVERITY_BADGES,
+)
+from config.clean import (
+    safe_str,
+    safe_int,
+    safe_float,
+    safe_risk,
+    safe_confidence,
+    clean_finding_for_display,
+    safe_text,
+)
+from config.owasp_mapping import (
+    ATTACK_TYPES,
+    ATTACK_TO_OWASP,
+    attack_description,
+    owasp_description,
+)
+from config.detection_rules import RULES, rule_map
+from remediation.remedy_engine import get_remediation_dict
 
 app = Flask(__name__)
 
 # ===============================
-# PATHS (repo-relative, no more hardcoded home dirs)
+# PATHS (repo-relative)
 # ===============================
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # repo root
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 REPORT_PATH = os.path.join(BASE_DIR, "data", "threat_report.csv")
 AI_SUMMARY_PATH = os.path.join(BASE_DIR, "data", "ai_summary.json")
+DETECTIONS_PATH = os.path.join(BASE_DIR, "data", "detections.csv")
+CORRELATIONS_PATH = os.path.join(BASE_DIR, "data", "correlations.csv")
 METRICS_PATH = os.path.join(BASE_DIR, "models", "training_metrics.json")
 
-# Mirrors RISK_ORDER in ml/encodings.py — the model's encoded ints are
-# positions on this scale, so we can turn "0..4" back into risk names
-# without importing the ml package (keeps the dashboard dependency-free).
-RISK_ORDER = ["Informational", "Low", "Medium", "High", "Critical"]
+
+# ===============================
+# CONTEXT PROCESSOR -- XTransformPort propagation
+# ===============================
+@app.context_processor
+def inject_gateway_helpers():
+    """Expose `qp` so templates can append the gateway port to every link.
+
+    When the dashboard is reached through the gateway (?XTransformPort=5000),
+    every internal link and static asset URL must carry that query param or
+    the gateway will route them to the Next.js app (port 3000) and 404.
+    Direct localhost:5000 access gets empty strings.
+    """
+    port = request.args.get("XTransformPort") if request else None
+    qp = f"?XTransformPort={port}" if port else ""
+    # separator for adding to a URL that already has a query string
+    ap = f"&XTransformPort={port}" if port else ""
+    return {"qp": qp, "ap": ap, "gateway_port": port or ""}
 
 
 # ===============================
@@ -28,27 +101,19 @@ def load_data():
     """Read the threat report CSV, or an empty frame if it is missing."""
     if not os.path.exists(REPORT_PATH):
         return pd.DataFrame()
-
-    df = pd.read_csv(REPORT_PATH)
-
-    # Clean missing values (original logic preserved)
-    if "Final_Risk" in df.columns:
-        df["Final_Risk"] = df["Final_Risk"].fillna("Unknown")
-
-    if "attack_type" in df.columns:
-        df["attack_type"] = df["attack_type"].fillna("Other")
-
-    if "method" in df.columns:
-        df["method"] = df["method"].fillna("Unknown")
-
-    if "cwe_numeric" in df.columns:
-        df["cwe_numeric"] = df["cwe_numeric"].fillna(0)
-
-    return df
+    try:
+        df = pd.read_csv(REPORT_PATH)
+    except Exception:
+        return pd.DataFrame()
+    if df.empty:
+        return df
+    # Apply explicit fallbacks to EVERY display column so no "nan" can ever
+    # reach a template (the v2 "nan problem" fix).
+    cleaned = [clean_finding_for_display(row) for _, row in df.iterrows()]
+    return pd.DataFrame(cleaned)
 
 
 def load_json(path):
-    """Small helper: read a JSON file or return None when it is missing."""
     if not os.path.exists(path):
         return None
     try:
@@ -58,140 +123,282 @@ def load_json(path):
         return None
 
 
+def load_detections():
+    if not os.path.exists(DETECTIONS_PATH):
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(DETECTIONS_PATH)
+    except Exception:
+        return pd.DataFrame()
+
+
+def load_correlations():
+    if not os.path.exists(CORRELATIONS_PATH):
+        return pd.DataFrame()
+    try:
+        return pd.read_csv(CORRELATIONS_PATH)
+    except Exception:
+        return pd.DataFrame()
+
+
 def to_json(payload):
     """Dump a dict to a JSON string safe to embed in a <script> block."""
-    return json.dumps(payload).replace("</", "<\\/")
+    return json.dumps(payload, default=str).replace("</", "<\\/")
 
 
 def url_to_path(url):
-    """Strip scheme + host so URLs stay readable; the full url goes in the tooltip."""
     if not isinstance(url, str) or url.strip() == "":
         return "(unknown)"
-    parsed = urlparse(url)
-    path = parsed.path or "/"
-    if parsed.query:
-        path += "?" + parsed.query
-    return path
+    try:
+        parsed = urlparse(url)
+        path = parsed.path or "/"
+        if parsed.query:
+            path += "?" + parsed.query
+        return path
+    except Exception:
+        return str(url)[:80]
 
 
 def sev_class(risk):
-    """Map a Final_Risk label to a CSS severity class for badges/dots."""
-    mapping = {
-        "Critical": "sev-critical",
-        "High": "sev-high",
-        "Medium": "sev-medium",
-        "Low": "sev-low",
-        "Informational": "sev-informational",
-    }
-    return mapping.get(str(risk), "sev-informational")
+    return SEVERITY_BADGES.get(safe_risk(risk), "unknown")
 
 
-def truncate(text, limit=140):
-    """Shorten long text for table cells, keeping full text for the tooltip."""
+def truncate(text, limit=160):
     text = "" if text is None else str(text)
     if len(text) <= limit:
         return text
     return text[: limit - 3].rstrip() + "..."
 
 
-# ===============================
-# DASHBOARD ROUTE
-# ===============================
-def shorten_label(text, max_len=18):
-    """Trim long axis labels so Chart.js never clips them on the left."""
+def shorten_label(text, max_len=22):
     text = str(text)
     return text if len(text) <= max_len else text[: max_len - 1].rstrip() + "…"
 
 
+# ===============================
+# DASHBOARD DATA BUILDERS
+# ===============================
+
+def _risk_counts(df):
+    if df.empty or "Final_Risk" not in df.columns:
+        return {label: 0 for label in RISK_ORDER}
+    counts = df["Final_Risk"].apply(safe_risk).value_counts()
+    return {label: int(counts.get(label, 0)) for label in RISK_ORDER}
+
+
+def _threat_activity(df, limit=12):
+    """Top findings for the SOC threat-activity feed (severity then score)."""
+    if df.empty:
+        return []
+    if "Final_Risk" not in df.columns:
+        return []
+    rows = df.to_dict(orient="records")
+    rows.sort(
+        key=lambda r: (
+            risk_index(safe_risk(r.get("Final_Risk"))),
+            safe_float(r.get("Hybrid_Threat_Score", r.get("hybrid_score", 0))),
+        ),
+        reverse=True,
+    )
+    out = []
+    for r in rows[:limit]:
+        out.append({
+            "finding_id": safe_str(r.get("finding_id"), "—"),
+            "severity": safe_risk(r.get("Final_Risk")),
+            "sev": sev_class(r.get("Final_Risk")),
+            "alert_name": safe_str(r.get("alert_name"), "Untitled finding"),
+            "attack_type": safe_str(r.get("attack_type"), "Other"),
+            "owasp": safe_str(r.get("OWASP_Category"), "Uncategorized"),
+            "cwe": safe_str(r.get("cweid"), "0"),
+            "path": url_to_path(r.get("url")),
+            "url": safe_str(r.get("url"), ""),
+            "hybrid_score": safe_float(r.get("Hybrid_Threat_Score", r.get("hybrid_score", 0))),
+        })
+    return out
+
+
+def _attack_matrix(df):
+    """attack_type (rows) x risk (cols) heatmap data."""
+    if df.empty:
+        return {"rows": [], "cols": list(RISK_ORDER)}
+    risk_cols = list(RISK_ORDER)
+    matrix = {attack: {r: 0 for r in risk_cols} for attack in ATTACK_TYPES}
+    for _, r in df.iterrows():
+        attack = safe_str(r.get("attack_type"), "Other")
+        if attack not in matrix:
+            attack = "Other"
+        risk = safe_risk(r.get("Final_Risk"))
+        matrix[attack][risk] = matrix[attack].get(risk, 0) + 1
+    rows = [{"attack": a, "values": [matrix[a][r] for r in risk_cols],
+             "total": sum(matrix[a].values())}
+            for a in ATTACK_TYPES if sum(matrix[a].values()) > 0]
+    rows.sort(key=lambda x: x["total"], reverse=True)
+    return {"rows": rows, "cols": risk_cols}
+
+
+def _detection_summary(detections_df):
+    """Per-rule trigger counts joined with rule metadata."""
+    out = []
+    counts = {}
+    if not detections_df.empty and "rule_id" in detections_df.columns:
+        counts = detections_df["rule_id"].value_counts().to_dict()
+    for rule in RULES:
+        out.append({
+            "rule_id": rule.rule_id,
+            "name": rule.name,
+            "severity": rule.severity,
+            "description": rule.description,
+            "recommended_action": rule.recommended_action,
+            "triggered": int(counts.get(rule.rule_id, 0)),
+        })
+    out.sort(key=lambda d: d["triggered"], reverse=True)
+    return out
+
+
+def _correlation_events(corr_df, limit=8):
+    if corr_df.empty:
+        return []
+    rows = corr_df.sort_values("correlation_score", ascending=False).head(limit)
+    out = []
+    for _, r in rows.iterrows():
+        out.append({
+            "correlation_id": safe_str(r.get("correlation_id"), "—"),
+            "endpoint": safe_str(r.get("endpoint"), "(unknown)"),
+            "score": safe_int(r.get("correlation_score")),
+            "severity": safe_risk(r.get("severity")),
+            "sev": sev_class(r.get("severity")),
+            "n_findings": len(str(r.get("finding_ids", "")).split(",")) if safe_str(r.get("finding_ids")) else 0,
+            "attack_types": safe_str(r.get("attack_types"), ""),
+            "description": safe_str(r.get("description"), ""),
+        })
+    return out
+
+
+def _system_status(df, metrics, detections_df, ai_summary):
+    return {
+        "scanner_ready": not df.empty,
+        "ml_ready": bool(metrics and metrics.get("classifier_trained")),
+        "detection_ready": not detections_df.empty,
+        "ai_ready": bool(ai_summary),
+    }
+
+
+# ===============================
+# ROUTE: DASHBOARD
+# ===============================
 @app.route("/")
 def dashboard():
     df = load_data()
     ai_summary = load_json(AI_SUMMARY_PATH)
+    metrics = load_json(METRICS_PATH)
+    detections_df = load_detections()
+    corr_df = load_correlations()
 
     if df.empty:
-        return render_template("dashboard.html", has_data=False, ai_summary=ai_summary)
+        return render_template("dashboard.html", has_data=False, ai_summary=ai_summary,
+                               status=_system_status(df, metrics, detections_df, ai_summary))
 
-    # ---------- RISK COUNTS (Final_Risk = escalated verdict) ----------
-    risk_counts = df["Final_Risk"].value_counts()
-    critical_count = int(risk_counts.get("Critical", 0))
-    high_count = int(risk_counts.get("High", 0))
-    medium_count = int(risk_counts.get("Medium", 0))
-    low_count = int(risk_counts.get("Low", 0))
-    informational_count = int(risk_counts.get("Informational", 0))
+    counts = _risk_counts(df)
+    total = int(sum(counts.values())) or 1
 
-    # ---------- CHART PAYLOADS ----------
-    attack_counts = df["attack_type"].value_counts().head(5)
-    owasp_counts = df["OWASP_Category"].value_counts().head(5) if "OWASP_Category" in df.columns else {}
-    method_counts = df["method"].value_counts()
+    # chart payloads
+    attack_counts = df["attack_type"].apply(safe_str).value_counts().head(6) if "attack_type" in df.columns else pd.Series(dtype=int)
+    owasp_counts = df["OWASP_Category"].apply(safe_str).value_counts().head(6) if "OWASP_Category" in df.columns else pd.Series(dtype=int)
+    method_counts = df["method"].apply(safe_str).value_counts() if "method" in df.columns else pd.Series(dtype=int)
 
-    # Top vulnerable URLs across High + Critical findings, path-only display
     hot_urls = {}
     if "url" in df.columns:
         hot = df[df["Final_Risk"].isin(["High", "Critical"])]
-        hot_urls = hot["url"].value_counts().head(5)
-
+        hot_urls = hot["url"].value_counts().head(6)
     top_urls = [
         {"path": url_to_path(url), "url": url, "count": int(count)}
         for url, count in hot_urls.items()
     ]
 
-    # Average ML confidence (column name carries the % sign)
-    avg_confidence = 0.0
-    if "ML_Confidence_%" in df.columns:
-        avg_confidence = round(float(pd.to_numeric(df["ML_Confidence_%"], errors="coerce").mean() or 0), 1)
+    avg_score = 0.0
+    if "Hybrid_Threat_Score" in df.columns:
+        avg_score = round(float(pd.to_numeric(df["Hybrid_Threat_Score"], errors="coerce").mean() or 0), 3)
+
+    # score distribution for the gauge / histogram
+    scores = pd.to_numeric(df.get("Hybrid_Threat_Score", pd.Series(dtype=float)), errors="coerce").dropna()
+    score_buckets = {
+        "0-25%": int(((scores >= 0) & (scores < 0.25)).sum()),
+        "25-50%": int(((scores >= 0.25) & (scores < 0.50)).sum()),
+        "50-75%": int(((scores >= 0.50) & (scores < 0.75)).sum()),
+        "75-100%": int(((scores >= 0.75) & (scores <= 1.0)).sum()),
+    }
 
     chart_data = {
         "risk": {
-            "labels": ["Critical", "High", "Medium", "Low", "Informational"],
-            "values": [critical_count, high_count, medium_count, low_count, informational_count],
+            "labels": list(RISK_ORDER),
+            "values": [counts[l] for l in RISK_ORDER],
         },
-        "attack": {"labels": [shorten_label(a) for a in attack_counts.index], "values": [int(v) for v in attack_counts.values]},
-        "owasp": {"labels": [shorten_label(a) for a in owasp_counts.index], "values": [int(v) for v in owasp_counts.values]},
-        "method": {"labels": list(method_counts.index), "values": [int(v) for v in method_counts.values]},
+        "attack": {
+            "labels": [shorten_label(a) for a in attack_counts.index],
+            "values": [int(v) for v in attack_counts.values],
+        },
+        "owasp": {
+            "labels": [shorten_label(a) for a in owasp_counts.index],
+            "values": [int(v) for v in owasp_counts.values],
+        },
+        "method": {
+            "labels": [shorten_label(a) for a in method_counts.index],
+            "values": [int(v) for v in method_counts.values],
+        },
+        "score_buckets": {
+            "labels": list(score_buckets.keys()),
+            "values": list(score_buckets.values()),
+        },
     }
 
     return render_template(
         "dashboard.html",
         has_data=True,
         ai_summary=ai_summary,
-        critical_count=critical_count,
-        high_count=high_count,
-        medium_count=medium_count,
-        low_count=low_count,
-        informational_count=informational_count,
-        avg_confidence=avg_confidence,
+        status=_system_status(df, metrics, detections_df, ai_summary),
+        counts=counts,
+        total=total,
+        percentages={k: round(100 * v / total, 1) for k, v in counts.items()},
+        avg_score=avg_score,
+        threat_activity=_threat_activity(df),
+        attack_matrix=_attack_matrix(df),
+        detection_summary=_detection_summary(detections_df),
+        correlation_events=_correlation_events(corr_df),
         top_urls=top_urls,
-        method_counts=method_counts.to_dict(),
         chart_data=to_json(chart_data),
+        rule_list=[{"rule_id": r.rule_id, "name": r.name, "severity": r.severity,
+                    "description": r.description, "recommended_action": r.recommended_action}
+                   for r in RULES],
     )
 
 
 # ===============================
-# ML INSIGHTS ROUTE
+# ROUTE: ML INSIGHTS
 # ===============================
 @app.route("/ml-insights")
 def ml_insights():
     df = load_data()
     metrics = load_json(METRICS_PATH)
 
-    # ---------- PER-CLASS TABLE (from the persisted classification report) ----------
     class_rows = []
-    accuracy = None
-    macro_f1 = None
+    headline = {}
+    feature_importance = []
+    cross_target = {}
     cm_labels = []
 
     if metrics:
         report = metrics.get("classification_report", {})
-        accuracy = report.get("accuracy")
-        macro_avg = report.get("macro avg", {})
-        macro_f1 = macro_avg.get("f1-score")
+        headline = metrics.get("headline_metrics", {}) or {}
+        feature_importance = metrics.get("feature_importance", []) or []
+        cross_target = metrics.get("cross_target_validation", {}) or {}
+        ev = metrics.get("evaluation_methodology", {}) or {}
 
         for key in sorted(report.keys()):
-            # only the numeric class keys (skip "accuracy", "macro avg", ...)
             if not str(key).isdigit():
                 continue
             row = report[key]
-            name = RISK_ORDER[int(key)] if int(key) < len(RISK_ORDER) else "Class " + str(key)
+            idx = int(key)
+            name = RISK_ORDER[idx] if idx < len(RISK_ORDER) else "Class " + str(key)
             class_rows.append({
                 "label": name,
                 "precision": row.get("precision"),
@@ -200,116 +407,156 @@ def ml_insights():
                 "support": row.get("support"),
             })
 
-        # confusion matrix labels follow the sorted class order
         dist = metrics.get("class_distribution", {})
         cm_labels = [
             RISK_ORDER[int(k)] if int(k) < len(RISK_ORDER) else "Class " + str(k)
             for k in sorted(dist.keys(), key=lambda x: int(x))
         ]
-
-    # ---------- ORIGINAL vs PREDICTED (straight from the report CSV) ----------
-    original_counts = {label: 0 for label in RISK_ORDER}
-    predicted_counts = {label: 0 for label in RISK_ORDER}
-
-    if not df.empty:
-        orig = df["original_risk"].value_counts() if "original_risk" in df.columns else {}
-        pred = df["predicted_risk"].value_counts() if "predicted_risk" in df.columns else {}
-        for label in RISK_ORDER:
-            original_counts[label] = int(orig.get(label, 0))
-            predicted_counts[label] = int(pred.get(label, 0))
-
-    # ---------- ML CONFIDENCE BUCKETS ----------
-    conf_buckets = {label: 0 for label in ["0-25%", "25-50%", "50-75%", "75-100%"]}
-    if not df.empty and "ML_Confidence_%" in df.columns:
-        conf = pd.to_numeric(df["ML_Confidence_%"], errors="coerce").dropna()
-        conf_buckets["0-25%"] = int(((conf >= 0) & (conf < 25)).sum())
-        conf_buckets["25-50%"] = int(((conf >= 25) & (conf < 50)).sum())
-        conf_buckets["50-75%"] = int(((conf >= 50) & (conf < 75)).sum())
-        conf_buckets["75-100%"] = int(((conf >= 75) & (conf <= 100)).sum())
-
-    chart_data = {
-        "conf_buckets": {
-            "labels": list(conf_buckets.keys()),
-            "values": list(conf_buckets.values()),
-        },
-        "orig_pred": {
-            "labels": RISK_ORDER,
-            "original": [original_counts[label] for label in RISK_ORDER],
-            "predicted": [predicted_counts[label] for label in RISK_ORDER],
-        },
-    }
+        headline.setdefault("dataset_rows", metrics.get("dataset_rows", 0))
+        headline.setdefault("feature_count", len(metrics.get("features", [])))
+        headline.setdefault("stratified", ev.get("stratified"))
+        headline.setdefault("roc_auc_note", ev.get("roc_auc_policy"))
 
     return render_template(
         "ml_insights.html",
         has_data=not df.empty,
         metrics=metrics,
+        headline=headline,
         class_rows=class_rows,
-        accuracy=accuracy,
-        macro_f1=macro_f1,
+        feature_importance=feature_importance[:15],
+        cross_target=cross_target,
         cm_labels=cm_labels,
-        feature_count=len(metrics.get("features", [])) if metrics else 0,
-        orig_counts=original_counts,
-        pred_counts=predicted_counts,
-        conf_buckets=conf_buckets,
-        chart_data=to_json(chart_data),
+        risk_order=RISK_ORDER,
     )
 
 
 # ===============================
-# REPORTS ROUTE
+# ROUTE: REPORTS
 # ===============================
 @app.route("/reports")
 def reports():
     df = load_data()
-
     if df.empty:
-        return render_template("reports.html", has_data=False, rows=[], total=0)
-
-    # Sort by ML confidence (most confident predictions first), cap the table
-    if "ML_Confidence_%" in df.columns:
-        df = df.sort_values("ML_Confidence_%", ascending=False)
+        return render_template("reports.html", has_data=False, rows=[], total=0,
+                               attack_types=[], owasp_categories=[])
 
     total = len(df)
-    df = df.head(500)
 
-    # Pre-compute display fields once here so the template stays dumb
+    # build full row dicts for the table + the detail drawer
     rows = []
     for _, r in df.iterrows():
-        final_risk = str(r.get("Final_Risk", "Unknown"))
-        conf = pd.to_numeric(pd.Series([r.get("ML_Confidence_%")]), errors="coerce").iloc[0]
-        url = r.get("url", "")
+        final_risk = safe_risk(r.get("Final_Risk"))
+        remediation = get_remediation_dict(r.get("attack_type", "Other"))
         rows.append({
+            "finding_id": safe_str(r.get("finding_id"), "—"),
             "severity": final_risk,
             "sev": sev_class(final_risk),
-            "scanner_risk": r.get("risk", ""),
-            "ml_prediction": r.get("predicted_risk", ""),
-            "ml_conf": "" if pd.isna(conf) else round(float(conf), 1),
-            "conf_width": 0 if pd.isna(conf) else max(0, min(100, float(conf))),
-            "attack_type": r.get("attack_type", ""),
-            "owasp": r.get("OWASP_Category", ""),
-            "method": r.get("method", ""),
-            "path": url_to_path(url),
-            "url": url if isinstance(url, str) else "",
-            "explanation": truncate(r.get("Explanation", "")),
+            "scanner_risk": safe_risk(r.get("original_risk")),
+            "ml_prediction": safe_risk(r.get("predicted_risk")),
+            "classifier_confidence": safe_float(r.get("classifier_confidence")),
+            "anomaly_score": safe_float(r.get("anomaly_score")),
+            "hybrid_score": safe_float(r.get("Hybrid_Threat_Score", r.get("hybrid_score"))),
+            "attack_type": safe_str(r.get("attack_type"), "Other"),
+            "owasp": safe_str(r.get("OWASP_Category"), "Uncategorized"),
+            "cwe": safe_str(r.get("cweid"), "0"),
+            "method": safe_str(r.get("method"), "Unknown"),
+            "path": url_to_path(r.get("url")),
+            "url": safe_str(r.get("url"), ""),
+            "alert_name": safe_str(r.get("alert_name"), "Untitled finding"),
+            "confidence": safe_confidence(r.get("confidence")),
+            "detection_rule": safe_str(r.get("detection_rules"), "—") or "—",
+            "correlation_id": safe_str(r.get("correlation_id"), "—") or "—",
+            "explanation": safe_text(r.get("Explanation")),
+            "remediation": remediation,  # structured dict for the drawer
+            "remediation_text": safe_text(r.get("Remediation")),
         })
 
-    return render_template("reports.html", has_data=True, rows=rows, total=total)
+    # pre-sort: severity desc, then hybrid score desc
+    rows.sort(key=lambda r: (risk_index(r["severity"]), r["hybrid_score"]), reverse=True)
+
+    # distinct filter values
+    attack_types = sorted({r["attack_type"] for r in rows})
+    owasp_categories = sorted({r["owasp"] for r in rows})
+
+    return render_template(
+        "reports.html",
+        has_data=True,
+        rows=rows[:500],
+        total=total,
+        shown=len(rows[:500]),
+        attack_types=attack_types,
+        owasp_categories=owasp_categories,
+    )
 
 
 # ===============================
-# CSV DOWNLOAD ROUTE
+# API ROUTES
+# ===============================
+@app.route("/api/summary")
+def api_summary():
+    df = load_data()
+    ai_summary = load_json(AI_SUMMARY_PATH)
+    metrics = load_json(METRICS_PATH)
+    detections_df = load_detections()
+    corr_df = load_correlations()
+    counts = _risk_counts(df)
+    total = int(sum(counts.values())) or 1
+    avg = 0.0
+    if not df.empty and "Hybrid_Threat_Score" in df.columns:
+        avg = round(float(pd.to_numeric(df["Hybrid_Threat_Score"], errors="coerce").mean() or 0), 3)
+    return jsonify({
+        "total_findings": int(sum(counts.values())),
+        "risk_distribution": counts,
+        "percentages": {k: round(100 * v / total, 1) for k, v in counts.items()},
+        "avg_hybrid_threat_score": avg,
+        "status": _system_status(df, metrics, detections_df, ai_summary),
+        "detections": _detection_summary(detections_df),
+        "correlations": _correlation_events(corr_df),
+    })
+
+
+@app.route("/api/findings")
+def api_findings():
+    df = load_data()
+    if df.empty:
+        return jsonify({"findings": [], "total": 0})
+    severity = request.args.get("severity")
+    attack = request.args.get("attack_type")
+    limit = safe_int(request.args.get("limit"), 500)
+    if severity:
+        df = df[df["Final_Risk"].apply(safe_risk) == safe_risk(severity)]
+    if attack and "attack_type" in df.columns:
+        df = df[df["attack_type"].apply(safe_str) == attack]
+    rows = [clean_finding_for_display(r) for _, r in df.head(limit).iterrows()]
+    return jsonify({"findings": rows, "total": len(df)})
+
+
+@app.route("/api/detections")
+def api_detections():
+    det_df = load_detections()
+    summary = _detection_summary(det_df)
+    return jsonify({"detections": summary, "total": int(len(det_df))})
+
+
+@app.route("/api/correlations")
+def api_correlations():
+    corr_df = load_correlations()
+    events = _correlation_events(corr_df, limit=50)
+    return jsonify({"correlations": events, "total": int(len(corr_df))})
+
+
+# ===============================
+# CSV DOWNLOAD
 # ===============================
 @app.route("/download-report")
 def download_report():
     if not os.path.exists(REPORT_PATH):
-        # Friendly fallback: send the user back to the reports empty state
         return redirect(url_for("reports"))
-
     return send_file(REPORT_PATH, as_attachment=True, download_name="threat_report.csv")
 
 
 if __name__ == "__main__":
-    # Debug mode stays off unless explicitly requested — the Werkzeug
+    # Debug mode stays off unless explicitly requested -- the Werkzeug
     # debugger should never be reachable on a shared network.
     app.run(
         host=os.environ.get("FLASK_HOST", "127.0.0.1"),

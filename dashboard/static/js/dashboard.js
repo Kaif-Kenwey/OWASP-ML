@@ -1,56 +1,69 @@
 // =====================================================
-// OWASP-ML dashboard charts + small page helpers
-// Chart payloads come from app.py via <script
-// type="application/json" id="chart-data"> blocks, so this
-// file stays dumb: read JSON, draw what exists, nothing else.
+// OWASP-ML SOC dashboard -- charts + interactions
+// Chart payloads come from app.py via <script type="application/json">
+// blocks, so this file stays dumb: read JSON, draw what exists, wire up
+// the reports table + detail drawer. No framework, no build step.
 // =====================================================
 
 document.addEventListener("DOMContentLoaded", function () {
 
-    // ---------- Chart.js defaults (Poppins + muted grid) ----------
+    // ---------- Chart.js dark defaults ----------
     if (window.Chart) {
-        Chart.defaults.font.family = "'Poppins', sans-serif";
-        Chart.defaults.font.size = 12;
-        Chart.defaults.color = "#64748b";
-        Chart.defaults.borderColor = "rgba(148, 163, 184, 0.18)";
+        Chart.defaults.font.family = "'Inter', 'Poppins', sans-serif";
+        Chart.defaults.font.size = 11.5;
+        Chart.defaults.color = "#94a3b8";
+        Chart.defaults.borderColor = "rgba(148, 163, 184, 0.12)";
     }
 
-    // ---------- Severity palette (matches style.css) ----------
-    var SEV_COLORS = {
-        "Critical": "#dc2626",
-        "High": "#ea580c",
-        "Medium": "#eab308",
-        "Low": "#16a34a",
-        "Informational": "#94a3b8"
+    const SEV_COLORS = {
+        "Critical": "#f43f5e",
+        "High": "#ef4444",
+        "Medium": "#f59e0b",
+        "Low": "#34d399",
+        "Informational": "#64748b"
     };
+    const CYAN = "#22d3ee";
+    const GREEN = "#34d399";
 
-    // ---------- Read the JSON payload(s) rendered by Jinja ----------
-    var data = {};
+    // ---------- Read every JSON payload block on the page ----------
+    const data = {};
     document.querySelectorAll('script[type="application/json"]').forEach(function (el) {
         try {
-            var parsed = JSON.parse(el.textContent);
+            const parsed = JSON.parse(el.textContent);
             Object.assign(data, parsed);
         } catch (err) {
             console.warn("chart-data block was not valid JSON", err);
         }
     });
 
-    // ---------- Shared option helpers ----------
     function baseBarOptions(horizontal) {
         return {
             indexAxis: horizontal ? "y" : "x",
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: "#0D1321",
+                    titleColor: "#e2e8f0",
+                    bodyColor: "#94a3b8",
+                    borderColor: "rgba(34,211,238,0.25)",
+                    borderWidth: 1,
+                    padding: 10,
+                    cornerRadius: 8,
+                    titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+                    bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+                }
+            },
             scales: {
-                x: { grid: { display: !horizontal } },
-                y: { grid: { display: horizontal }, beginAtZero: true }
+                x: { grid: { color: "rgba(148,163,184,0.08)", display: !horizontal }, ticks: { color: "#64748b", font: { family: "'JetBrains Mono', monospace", size: 10 } } },
+                y: { grid: { color: "rgba(148,163,184,0.08)", display: horizontal }, beginAtZero: true, ticks: { color: "#94a3b8", font: { family: "'JetBrains Mono', monospace", size: 10 } } }
             }
         };
     }
 
     // ---------- Dashboard: risk doughnut ----------
-    var riskCanvas = document.getElementById("riskChart");
+    const riskCanvas = document.getElementById("riskChart");
     if (riskCanvas && data.risk) {
         new Chart(riskCanvas, {
             type: "doughnut",
@@ -58,133 +71,268 @@ document.addEventListener("DOMContentLoaded", function () {
                 labels: data.risk.labels,
                 datasets: [{
                     data: data.risk.values,
-                    backgroundColor: data.risk.labels.map(function (l) { return SEV_COLORS[l] || "#94a3b8"; }),
-                    borderColor: "#ffffff",
-                    borderWidth: 2
+                    backgroundColor: data.risk.labels.map(l => SEV_COLORS[l] || "#64748b"),
+                    borderColor: "#0D1321",
+                    borderWidth: 3,
+                    hoverOffset: 6
                 }]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "58%",
-                plugins: { legend: { position: "bottom" } }
-            }
-        });
-    }
-
-    // ---------- Dashboard: top attack types ----------
-    var attackCanvas = document.getElementById("attackChart");
-    if (attackCanvas && data.attack) {
-        new Chart(attackCanvas, {
-            type: "bar",
-            data: {
-                labels: data.attack.labels,
-                datasets: [{
-                    data: data.attack.values,
-                    backgroundColor: "#0e9488",
-                    borderRadius: 6
-                }]
-            },
-            options: baseBarOptions(true)
-        });
-    }
-
-    // ---------- Dashboard: OWASP categories ----------
-    var owaspCanvas = document.getElementById("owaspChart");
-    if (owaspCanvas && data.owasp) {
-        new Chart(owaspCanvas, {
-            type: "bar",
-            data: {
-                labels: data.owasp.labels,
-                datasets: [{
-                    data: data.owasp.values,
-                    backgroundColor: "#0f766e",
-                    borderRadius: 6
-                }]
-            },
-            options: baseBarOptions(true)
-        });
-    }
-
-    // ---------- Dashboard: HTTP methods ----------
-    var methodCanvas = document.getElementById("methodChart");
-    if (methodCanvas && data.method) {
-        new Chart(methodCanvas, {
-            type: "bar",
-            data: {
-                labels: data.method.labels,
-                datasets: [{
-                    data: data.method.values,
-                    backgroundColor: "#64748b",
-                    borderRadius: 6
-                }]
-            },
-            options: baseBarOptions(true)
-        });
-    }
-
-    // ---------- ML Insights: confidence buckets ----------
-    var bucketCanvas = document.getElementById("confBucketChart");
-    if (bucketCanvas && data.conf_buckets) {
-        new Chart(bucketCanvas, {
-            type: "bar",
-            data: {
-                labels: data.conf_buckets.labels,
-                datasets: [{
-                    data: data.conf_buckets.values,
-                    backgroundColor: ["#94a3b8", "#eab308", "#0e9488", "#0f766e"],
-                    borderRadius: 6
-                }]
-            },
-            options: baseBarOptions(false)
-        });
-    }
-
-    // ---------- ML Insights: original vs predicted risk ----------
-    var origPredCanvas = document.getElementById("origPredChart");
-    if (origPredCanvas && data.orig_pred) {
-        new Chart(origPredCanvas, {
-            type: "bar",
-            data: {
-                labels: data.orig_pred.labels,
-                datasets: [
-                    {
-                        label: "Scanner risk",
-                        data: data.orig_pred.original,
-                        backgroundColor: "#94a3b8",
-                        borderRadius: 5
-                    },
-                    {
-                        label: "ML / final prediction",
-                        data: data.orig_pred.predicted,
-                        backgroundColor: "#0e9488",
-                        borderRadius: 5
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: "bottom" } },
-                scales: {
-                    x: { grid: { display: false } },
-                    y: { beginAtZero: true }
+                responsive: true, maintainAspectRatio: false, cutout: "62%",
+                plugins: {
+                    legend: { position: "bottom", labels: { color: "#94a3b8", font: { family: "'JetBrains Mono', monospace", size: 11 }, padding: 12, usePointStyle: true, pointStyle: "rectRounded" } },
+                    tooltip: { backgroundColor: "#0D1321", titleColor: "#e2e8f0", bodyColor: "#94a3b8", borderColor: "rgba(34,211,238,0.25)", borderWidth: 1, padding: 10, cornerRadius: 8 }
                 }
             }
         });
     }
 
-    // ---------- Reports page: client-side row filter ----------
-    var searchBox = document.getElementById("reportSearch");
-    var reportBody = document.getElementById("reportBody");
-    if (searchBox && reportBody) {
-        searchBox.addEventListener("input", function () {
-            var needle = searchBox.value.trim().toLowerCase();
-            reportBody.querySelectorAll("tr").forEach(function (row) {
-                var text = row.textContent.toLowerCase();
-                row.style.display = text.indexOf(needle) !== -1 ? "" : "none";
+    // ---------- Dashboard: top attack types ----------
+    const attackCanvas = document.getElementById("attackChart");
+    if (attackCanvas && data.attack) {
+        new Chart(attackCanvas, {
+            type: "bar",
+            data: { labels: data.attack.labels, datasets: [{ data: data.attack.values, backgroundColor: CYAN, borderRadius: 5 }] },
+            options: baseBarOptions(true)
+        });
+    }
+
+    // ---------- Dashboard: OWASP categories ----------
+    const owaspCanvas = document.getElementById("owaspChart");
+    if (owaspCanvas && data.owasp) {
+        new Chart(owaspCanvas, {
+            type: "bar",
+            data: { labels: data.owasp.labels, datasets: [{ data: data.owasp.values, backgroundColor: GREEN, borderRadius: 5 }] },
+            options: baseBarOptions(true)
+        });
+    }
+
+    // ---------- Dashboard: HTTP methods ----------
+    const methodCanvas = document.getElementById("methodChart");
+    if (methodCanvas && data.method) {
+        new Chart(methodCanvas, {
+            type: "bar",
+            data: { labels: data.method.labels, datasets: [{ data: data.method.values, backgroundColor: "#64748b", borderRadius: 5 }] },
+            options: baseBarOptions(true)
+        });
+    }
+
+    // ---------- Dashboard: hybrid score buckets ----------
+    const bucketCanvas = document.getElementById("scoreBucketChart");
+    if (bucketCanvas && data.score_buckets) {
+        new Chart(bucketCanvas, {
+            type: "bar",
+            data: {
+                labels: data.score_buckets.labels,
+                datasets: [{ data: data.score_buckets.values, backgroundColor: ["#64748b", "#34d399", "#f59e0b", "#f43f5e"], borderRadius: 5 }]
+            },
+            options: baseBarOptions(false)
+        });
+    }
+
+    // ---------- Gauge arc animation ----------
+    const gaugeArc = document.getElementById("gaugeArc");
+    const gaugeNum = document.getElementById("gaugeNum");
+    if (gaugeArc && gaugeNum) {
+        const pct = Math.max(0, Math.min(100, parseFloat(gaugeNum.textContent) || 0));
+        const total = 235;   // arc path length
+        const offset = total - (total * pct / 100);
+        requestAnimationFrame(() => {
+            gaugeArc.style.transition = "stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)";
+            gaugeArc.style.strokeDashoffset = offset;
+        });
+    }
+
+    // =====================================================
+    // REPORTS PAGE -- search + filters + sort + drawer
+    // =====================================================
+    const searchBox = document.getElementById("reportSearch");
+    const sevFilter = document.getElementById("filterSeverity");
+    const attackFilter = document.getElementById("filterAttack");
+    const owaspFilter = document.getElementById("filterOwasp");
+    const reportBody = document.getElementById("reportBody");
+    const rowNote = document.getElementById("rowNote");
+
+    function applyReportFilters() {
+        if (!reportBody) return;
+        const needle = (searchBox && searchBox.value.trim().toLowerCase()) || "";
+        const sev = sevFilter ? sevFilter.value : "";
+        const atk = attackFilter ? attackFilter.value : "";
+        const ows = owaspFilter ? owaspFilter.value : "";
+        let visible = 0;
+        reportBody.querySelectorAll("tr").forEach(function (row) {
+            const text = row.textContent.toLowerCase();
+            const matchText = !needle || text.indexOf(needle) !== -1;
+            const matchSev = !sev || row.dataset.severity === sev;
+            const matchAtk = !atk || row.dataset.attack === atk;
+            const matchOws = !ows || row.dataset.owasp === ows;
+            const show = matchText && matchSev && matchAtk && matchOws;
+            row.style.display = show ? "" : "none";
+            if (show) visible++;
+        });
+        if (rowNote) {
+            rowNote.textContent = visible + " shown (of " + (reportBody.querySelectorAll("tr").length) + ")";
+        }
+    }
+    [searchBox, sevFilter, attackFilter, owaspFilter].forEach(function (el) {
+        if (el) el.addEventListener("input", applyReportFilters);
+        if (el) el.addEventListener("change", applyReportFilters);
+    });
+    if (reportBody) applyReportFilters();
+
+    // ---------- sortable columns ----------
+    const table = document.getElementById("reportTable");
+    if (table) {
+        const headers = table.querySelectorAll("th.sortable");
+        let sortState = { col: null, dir: 1 };
+        headers.forEach(function (th) {
+            th.addEventListener("click", function () {
+                const col = th.dataset.sort;
+                if (sortState.col === col) sortState.dir = -sortState.dir;
+                else { sortState.col = col; sortState.dir = 1; }
+                headers.forEach(h => h.querySelector(".arrow").textContent = "");
+                th.querySelector(".arrow").textContent = sortState.dir > 0 ? "▲" : "▼";
+
+                const rows = Array.from(reportBody.querySelectorAll("tr"));
+                const sevRank = { Critical: 4, High: 3, Medium: 2, Low: 1, Informational: 0 };
+                rows.sort(function (a, b) {
+                    const av = (a.dataset[col] !== undefined ? a.dataset[col] : a.querySelector(`td[data-${col}]`)?.textContent) || "";
+                    const bv = (b.dataset[col] !== undefined ? b.dataset[col] : b.querySelector(`td[data-${col}]`)?.textContent) || "";
+                    let va, vb;
+                    if (col === "severity" || col === "ml_prediction") {
+                        va = sevRank[av] !== undefined ? sevRank[av] : -1;
+                        vb = sevRank[bv] !== undefined ? sevRank[bv] : -1;
+                    } else if (col === "anomaly_score" || col === "hybrid_score") {
+                        // read from the cell's numeric content
+                        const ar = a.querySelector(".conf-cell .mono");
+                        const br = b.querySelector(".conf-cell .mono");
+                        va = ar ? parseFloat(ar.textContent) : 0;
+                        vb = br ? parseFloat(br.textContent) : 0;
+                        if (col === "anomaly_score") {
+                            va = parseFloat((a.children[8] || {}).textContent) || 0;
+                            vb = parseFloat((b.children[8] || {}).textContent) || 0;
+                        }
+                    } else if (col === "cwe" || col === "confidence") {
+                        va = av; vb = bv;
+                    } else {
+                        va = av.toLowerCase(); vb = bv.toLowerCase();
+                    }
+                    if (va < vb) return -1 * sortState.dir;
+                    if (va > vb) return 1 * sortState.dir;
+                    return 0;
+                });
+                rows.forEach(r => reportBody.appendChild(r));
+                applyReportFilters();
             });
         });
     }
+
+    // ---------- detail drawer ----------
+    const drawer = document.getElementById("findingDrawer");
+    const backdrop = document.getElementById("drawerBackdrop");
+    const drawerTitle = document.getElementById("drawerTitle");
+    const drawerSub = document.getElementById("drawerSub");
+    const drawerBody = document.getElementById("drawerBody");
+    const drawerClose = document.getElementById("drawerClose");
+
+    function openDrawer(row) {
+        let f = {};
+        try { f = JSON.parse(row.dataset.finding || "{}"); } catch (e) { f = {}; }
+        drawerTitle.textContent = f.alert_name || "Finding";
+        drawerSub.textContent = f.finding_id ? (f.finding_id + " · " + (f.url || "")) : (f.url || "");
+
+        const sev = f.severity || "Informational";
+        const remediation = f.remediation || {};
+        drawerBody.innerHTML = `
+            <div class="drawer-section">
+                <span class="badge ${f.sev || 'sev-unknown'}">${sev}</span>
+                <span class="badge ${String(f.attack_type||'').toLowerCase().replace(/[^a-z]/g,'') || 'sev-unknown'}" style="margin-left:6px;">${f.attack_type || 'Other'}</span>
+                <span class="chip" style="margin-left:6px;">${f.owasp || 'Uncategorized'}</span>
+            </div>
+            <div class="drawer-section">
+                <h4>Endpoint</h4>
+                <p class="mono small" style="word-break:break-all;">${f.url || '(unknown)'}</p>
+                <div class="kv" style="margin-top:8px;">
+                    <span class="k">Method</span><span class="v">${f.method || '—'}</span>
+                    <span class="k">CWE</span><span class="v">${f.cwe || '0'}</span>
+                    <span class="k">Scanner risk</span><span class="v">${f.scanner_risk || '—'}</span>
+                    <span class="k">Scanner conf.</span><span class="v">${f.confidence || '—'}</span>
+                    <span class="k">ML prediction</span><span class="v">${f.ml_prediction || '—'}</span>
+                    <span class="k">Detection rule</span><span class="v">${f.detection_rule || 'None'}</span>
+                    <span class="k">Correlation</span><span class="v">${f.correlation_id || 'None'}</span>
+                </div>
+            </div>
+            <div class="drawer-section">
+                <h4>Risk Calculation</h4>
+                <div class="score-grid">
+                    <div class="score-tile"><div class="k">Classifier conf.</div><div class="v">${(f.classifier_confidence || 0).toFixed(3)}</div></div>
+                    <div class="score-tile"><div class="k">Anomaly score</div><div class="v">${(f.anomaly_score || 0).toFixed(3)}</div></div>
+                    <div class="score-tile"><div class="k">Hybrid score</div><div class="v">${(f.hybrid_score || 0).toFixed(3)}</div></div>
+                    <div class="score-tile"><div class="k">Final risk</div><div class="v">${sev}</div></div>
+                </div>
+                <p class="small muted" style="margin-top:8px;">hybrid = 0.6×classifier + 0.3×anomaly + 0.1×static (not a probability)</p>
+            </div>
+            <div class="drawer-section">
+                <h4>Explanation</h4>
+                <p>${f.explanation || 'Standard vulnerability pattern detected.'}</p>
+            </div>
+            <div class="drawer-section">
+                <h4>Remediation</h4>
+                <div class="kv">
+                    <span class="k">Why it matters</span><span class="v">${(remediation.why_it_matters || '—')}</span>
+                </div>
+                <p style="margin-top:8px;"><strong>Impact:</strong> ${remediation.impact || '—'}</p>
+                <p><strong>Fix:</strong></p>
+                <ol>${(remediation.fix || 'Refer to OWASP guidelines.').split('\n').filter(s=>s.trim()).map(s=>`<li>${s.replace(/^\d+\)\s*/,'')}</li>`).join('')}</ol>
+                <p class="small muted" style="margin-top:6px;"><strong>Best practice:</strong> ${remediation.best_practice || '—'}</p>
+            </div>
+        `;
+        drawer.classList.add("open");
+        backdrop.classList.add("open");
+        document.body.style.overflow = "hidden";
+    }
+    function closeDrawer() {
+        drawer.classList.remove("open");
+        backdrop.classList.remove("open");
+        document.body.style.overflow = "";
+    }
+    if (reportBody && drawer) {
+        reportBody.addEventListener("click", function (e) {
+            const row = e.target.closest("tr.report-row");
+            if (row) openDrawer(row);
+        });
+    }
+    if (drawerClose) drawerClose.addEventListener("click", closeDrawer);
+    if (backdrop) backdrop.addEventListener("click", closeDrawer);
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && drawer && drawer.classList.contains("open")) closeDrawer();
+    });
+
+    // =====================================================
+    // DETECTION RULE ROW -> scroll reports filtered by rule (lightweight)
+    // =====================================================
+    document.querySelectorAll(".rule-row[data-rule]").forEach(function (row) {
+        row.addEventListener("click", function () {
+            const ruleId = row.dataset.rule;
+            // surface the rule description in an alert-free way: toggle a class
+            row.classList.toggle("expanded");
+            const existing = row.querySelector(".rule-detail");
+            if (existing) { existing.remove(); return; }
+            const detail = document.createElement("div");
+            detail.className = "rule-desc rule-detail";
+            const desc = row.querySelector(".rule-desc");
+            detail.textContent = row.dataset.action || desc ? (desc ? desc.textContent + " — click again to collapse." : "") : "";
+            const name = row.querySelector(".rule-name");
+            if (name) {
+                const d = document.createElement("div");
+                d.className = "rule-desc";
+                d.style.color = "var(--cyan)";
+                d.style.marginTop = "6px";
+                d.textContent = "See the Findings page — detection column shows " + ruleId + " on affected rows.";
+                name.parentElement.appendChild(d);
+                setTimeout(() => d.remove(), 3500);
+            }
+        });
+    });
 
 });

@@ -1,11 +1,15 @@
 {% extends "base.html" %}
 
-{% block title %}Reports{% endblock %}
-{% block page_title %}Detailed Findings{% endblock %}
+{% block title %}Findings{% endblock %}
+{% block page_title %}Detailed Findings Report{% endblock %}
+{% block page_subtitle %}{{ total }} findings · sorted by severity then Hybrid Threat Score{% endblock %}
 
 {% block topbar_actions %}
 {% if has_data %}
-<a class="btn btn-accent" href="/download-report">Export CSV</a>
+<a class="btn btn-accent" href="/download-report{{ qp }}">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+    Export CSV
+</a>
 {% endif %}
 {% endblock %}
 
@@ -16,10 +20,8 @@
 <div class="card empty-state">
     <div class="empty-glyph">📄</div>
     <h2>No report rows yet</h2>
-    <p>
-        The findings table is built from <code>data/threat_report.csv</code>.
-        Run the pipeline to produce it, then refresh:
-    </p>
+    <p>The findings table is built from <code>data/threat_report.csv</code>.
+       Run the pipeline to produce it, then refresh:</p>
     <p class="empty-command">python run_pipeline.py --demo</p>
 </div>
 
@@ -28,51 +30,85 @@
 <!-- ================= TOOLBAR ================= -->
 <div class="toolbar">
     <input type="search" id="reportSearch" class="search-input"
-           placeholder="Filter findings (url, attack type, risk...)" autocomplete="off">
-    <span class="toolbar-note">
-        Showing {{ rows | length }} of {{ total }} findings{% if total > rows | length %} (capped at 500){% endif %}
-        — sorted by ML confidence
-    </span>
+           placeholder="filter: url, alert, cwe, attack type..." autocomplete="off">
+    <select class="filter-select" id="filterSeverity" aria-label="filter by severity">
+        <option value="">All severities</option>
+        {% for s in ['Critical','High','Medium','Low','Informational'] %}
+        <option value="{{ s }}">{{ s }}</option>
+        {% endfor %}
+    </select>
+    <select class="filter-select" id="filterAttack" aria-label="filter by attack type">
+        <option value="">All attack types</option>
+        {% for a in attack_types %}<option value="{{ a }}">{{ a }}</option>{% endfor %}
+    </select>
+    <select class="filter-select" id="filterOwasp" aria-label="filter by OWASP category">
+        <option value="">All OWASP</option>
+        {% for o in owasp_categories %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
+    </select>
+    <span class="toolbar-note" id="rowNote">showing {{ shown }} of {{ total }}</span>
 </div>
 
 <!-- ================= FINDINGS TABLE ================= -->
 <div class="card table-card">
     <div class="table-scroll">
-        <table class="data-table report-table">
+        <table class="data-table report-table" id="reportTable">
             <thead>
                 <tr>
-                    <th>Severity</th>
-                    <th>Scanner Risk</th>
-                    <th>ML Prediction</th>
-                    <th>ML Conf %</th>
-                    <th>Attack Type</th>
-                    <th>OWASP Category</th>
-                    <th>Method</th>
+                    <th class="sortable" data-sort="severity">Severity <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="alert_name">Finding <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="attack_type">Attack Type <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="owasp">OWASP <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="cwe">CWE <span class="arrow"></span></th>
                     <th>Path</th>
-                    <th>Explanation</th>
+                    <th class="sortable" data-sort="method">Method <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="confidence">Scan Conf <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="ml_prediction">ML Pred <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="anomaly_score">Anomaly <span class="arrow"></span></th>
+                    <th class="sortable" data-sort="hybrid_score">Hybrid Score <span class="arrow"></span></th>
+                    <th>Detection</th>
                 </tr>
             </thead>
             <tbody id="reportBody">
                 {% for r in rows %}
-                <tr class="report-row">
+                <tr class="report-row"
+                    data-severity="{{ r.severity }}"
+                    data-attack="{{ r.attack_type }}"
+                    data-owasp="{{ r.owasp }}"
+                    data-finding='{{ r | tojson }}'>
                     <td><span class="badge {{ r.sev }}">{{ r.severity }}</span></td>
-                    <td>{{ r.scanner_risk }}</td>
-                    <td>{{ r.ml_prediction }}</td>
-                    <td class="conf-cell">
-                        <span class="conf-bar"><span class="conf-fill" style="width: {{ r.conf_width }}%;"></span></span>
-                        {{ r.ml_conf }}
-                    </td>
+                    <td>{{ r.alert_name }} <span class="mono faint small">{{ r.finding_id }}</span></td>
                     <td>{{ r.attack_type }}</td>
-                    <td>{{ r.owasp }}</td>
-                    <td>{{ r.method }}</td>
-                    <td class="path-cell" title="{{ r.url }}">{{ r.path }}</td>
-                    <td class="explain-cell" title="{{ r.explanation }}">{{ r.explanation }}</td>
+                    <td class="small">{{ r.owasp }}</td>
+                    <td class="mono">{{ r.cwe }}</td>
+                    <td class="path-cell mono small" title="{{ r.url }}">{{ r.path }}</td>
+                    <td class="mono">{{ r.method }}</td>
+                    <td class="mono">{{ r.confidence }}</td>
+                    <td class="mono">{{ r.ml_prediction }}</td>
+                    <td class="mono">{{ '%.3f' | format(r.anomaly_score) }}</td>
+                    <td class="conf-cell">
+                        <span class="conf-bar"><span class="conf-fill" style="width: {{ (r.hybrid_score * 100) | round(1) }}%;"></span></span>
+                        <span class="mono">{{ '%.3f' | format(r.hybrid_score) }}</span>
+                    </td>
+                    <td class="mono small">{{ r.detection_rule }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
+
+<!-- ================= DETAIL DRAWER ================= -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<aside class="drawer" id="findingDrawer" role="dialog" aria-modal="true" aria-label="Finding detail">
+    <div class="drawer-head">
+        <div>
+            <h3 id="drawerTitle">Finding detail</h3>
+            <div class="sub" id="drawerSub"></div>
+        </div>
+        <button class="drawer-close" id="drawerClose" aria-label="close">×</button>
+    </div>
+    <div class="drawer-body" id="drawerBody"></div>
+</aside>
 
 {% endif %}
 
