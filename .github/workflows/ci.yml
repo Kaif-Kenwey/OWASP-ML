@@ -20,13 +20,41 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Unit tests
+      - name: Unit tests (detection, correlation, NaN, mappings, features)
         run: pytest tests/ -q
 
-      - name: Smoke test — full demo pipeline (no ZAP needed)
+      - name: Smoke test -- full demo pipeline (no ZAP needed)
         run: python run_pipeline.py --demo
 
-      - name: Smoke test — dashboard boots
+      - name: Verify generated files exist
+        run: |
+          test -f data/processed_latest.csv
+          test -f data/final_results.csv
+          test -f data/threat_report.csv
+          test -f data/detections.csv
+          test -f data/correlations.csv
+          test -f data/ai_summary.json
+          test -f models/training_metrics.json
+          echo "All generated files present."
+
+      - name: Verify no NaN leaks into critical report columns
+        run: |
+          python - <<'EOF'
+          import pandas as pd
+          df = pd.read_csv("data/threat_report.csv")
+          # Critical display columns must NEVER be NaN/nan/none/empty -- these
+          # are the fields the spec says must always render an explicit value.
+          critical = ["risk", "original_risk", "predicted_risk", "Final_Risk",
+                      "attack_type", "OWASP_Category", "method", "url", "cweid",
+                      "Explanation", "Remediation", "Hybrid_Threat_Score"]
+          missing = {c: int(df[c].astype(str).str.strip().str.lower().isin(["nan","none",""]).sum())
+                     for c in critical if c in df.columns}
+          leaked = {c: n for c, n in missing.items() if n > 0}
+          assert not leaked, f"NaN-like values leaked into critical columns: {leaked}"
+          print("Critical report columns are NaN-clean:", missing)
+          EOF
+
+      - name: Smoke test -- dashboard boots (all pages + APIs)
         run: |
           python - <<'EOF'
           import os, sys
@@ -34,8 +62,10 @@ jobs:
           os.environ["FLASK_TESTING"] = "1"
           from dashboard.app import app
           client = app.test_client()
-          for route in ["/", "/ml-insights", "/reports"]:
+          routes = ["/", "/ml-insights", "/reports",
+                    "/api/summary", "/api/findings", "/api/detections", "/api/correlations"]
+          for route in routes:
               r = client.get(route)
               assert r.status_code == 200, f"{route} returned {r.status_code}"
-          print("Dashboard routes OK")
+          print("Dashboard routes + APIs OK")
           EOF

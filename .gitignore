@@ -20,6 +20,8 @@ data/report.json
 data/processed*.csv
 data/final_results.csv
 data/threat_report.csv
+data/detections.csv
+data/correlations.csv
 data/ai_summary.json
 reports/
 
@@ -28,3 +30,7 @@ reports/
 Thumbs.db
 .idea/
 .vscode/
+
+# --- Local run logs (not generated pipeline outputs) ---
+*.log
+flask.log

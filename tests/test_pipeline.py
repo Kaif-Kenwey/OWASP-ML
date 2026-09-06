@@ -1,23 +1,28 @@
 """
 Unit tests for the OWASP-ML core logic.
 
-These run in CI without ZAP, Flask, or trained models — they only test
+These run in CI without ZAP, Flask, or trained models -- they only test
 pure functions so the suite stays fast and deterministic.
 """
 
 import json
 import os
 import sys
+import tempfile
 
 import pandas as pd
 import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from ml.alert_processor import map_to_attack, extract_numeric, extract_risk, count_references
+from ml.alert_processor import (
+    map_to_attack, extract_numeric, extract_risk, count_references, process_alerts,
+)
 from ml.encodings import encode_confidence, encode_method, risk_index, risk_from_index
 from ml.threat_intelligence import escalate_risk, map_owasp_category
 from ml.features import build_sample_features, build_features
+from remediation.remedy_engine import get_remediation, get_remediation_dict
+from config.settings import HYBRID_WEIGHTS
 
 
 # -----------------------------
@@ -176,6 +181,171 @@ def test_bundled_sample_data_is_valid_and_labeled():
     assert isinstance(alerts, list) and len(alerts) > 0
 
     risks = {extract_risk(a) for a in alerts}
-    # every alert must yield a real risk label — empty labels were the v1 bug
+    # every alert must yield a real risk label -- empty labels were the v1 bug
     assert "" not in risks
     assert risks.issubset({"Informational", "Low", "Medium", "High", "Critical"})
+
+
+# -----------------------------
+# finding_id + stable join (v3 traceability)
+# -----------------------------
+
+def test_process_alerts_assigns_finding_id_and_signature():
+    """Every processed alert gets a stable finding_id and a content signature."""
+    raw = [
+        {"url": "http://h/login", "alert": "SQLi", "cweid": "89",
+         "method": "POST", "risk": "High", "confidence": "High", "param": ""},
+        {"url": "http://h/search?q=1", "alert": "XSS", "cweid": "79",
+         "method": "GET", "risk": "Medium", "confidence": "Medium", "param": "q"},
+    ]
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "scan.json")
+        with open(path, "w") as f:
+            json.dump(raw, f)
+        df = process_alerts(raw_scan_path=path)
+
+    assert len(df) == 2
+    assert "finding_id" in df.columns
+    assert "signature" in df.columns
+    assert df["finding_id"].iloc[0] == "F-0001"
+    assert df["finding_id"].iloc[1] == "F-0002"
+    assert df["signature"].nunique() == 2
+
+
+def test_finding_id_is_stable_across_runs():
+    """Same input -> same finding_ids (deterministic ordering)."""
+    raw = [
+        {"url": "http://h/a", "alert": "A", "cweid": "0", "method": "GET", "risk": "Low"},
+        {"url": "http://h/b", "alert": "B", "cweid": "0", "method": "GET", "risk": "Low"},
+    ]
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "scan.json")
+        with open(path, "w") as f:
+            json.dump(raw, f)
+        df1 = process_alerts(raw_scan_path=path).reset_index(drop=True)
+        df2 = process_alerts(raw_scan_path=path).reset_index(drop=True)
+    assert list(df1["finding_id"]) == list(df2["finding_id"])
+
+
+# -----------------------------
+# malformed alerts (v3 robustness)
+# -----------------------------
+
+def test_process_alerts_handles_malformed_alerts():
+    """Missing fields, weird types, and empty values must not crash the processor."""
+    raw = [
+        {},  # totally empty
+        {"url": None, "alert": "", "cweid": None, "method": "", "risk": ""},
+        {"url": "http://h/x", "alert": "X", "cweid": "9999", "method": "WEIRD",
+         "risk": "High", "confidence": "High"},
+    ]
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "scan.json")
+        with open(path, "w") as f:
+            json.dump(raw, f)
+        df = process_alerts(raw_scan_path=path)
+    assert len(df) == 3
+    # risk never empty -> the v1 "nan" bug must not recur
+    assert "" not in set(df["risk"])
+    assert "Informational" in set(df["risk"])
+
+
+def test_process_alerts_empty_list_returns_empty_frame():
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "scan.json")
+        with open(path, "w") as f:
+            json.dump([], f)
+        df = process_alerts(raw_scan_path=path)
+    assert df.empty
+
+
+def test_process_alerts_missing_file_returns_empty_frame():
+    df = process_alerts(raw_scan_path="/nonexistent/path/scan.json")
+    assert df.empty
+
+
+# -----------------------------
+# duplicate findings (v3 traceability)
+# -----------------------------
+
+def test_duplicate_findings_get_distinct_ids_but_same_signature():
+    raw = [
+        {"url": "http://h/login", "alert": "SQLi", "cweid": "89",
+         "method": "POST", "risk": "High", "param": ""},
+        {"url": "http://h/login", "alert": "SQLi", "cweid": "89",
+         "method": "POST", "risk": "High", "param": ""},
+    ]
+    with tempfile.TemporaryDirectory() as d:
+        path = os.path.join(d, "scan.json")
+        with open(path, "w") as f:
+            json.dump(raw, f)
+        df = process_alerts(raw_scan_path=path)
+    # distinct finding_ids (positional) but identical signature (content)
+    assert df["finding_id"].iloc[0] != df["finding_id"].iloc[1]
+    assert df["signature"].iloc[0] == df["signature"].iloc[1]
+
+
+# -----------------------------
+# escalate_risk with detection + correlation signals (v3)
+# -----------------------------
+
+def test_escalate_risk_detection_floor_never_downgrades():
+    # scanner High + detection Medium -> stays High (floor never downgrades)
+    assert escalate_risk("High", "High", 0.10, detection_severity="Medium") == "High"
+
+
+def test_escalate_risk_detection_can_floor_up():
+    # scanner Low + detection Critical -> floors to Critical
+    assert escalate_risk("Low", "Low", 0.10, detection_severity="Critical") == "Critical"
+
+
+def test_escalate_risk_correlation_only_when_strong():
+    # weak correlation score -> no bump
+    assert escalate_risk("Medium", "Medium", 0.10,
+                         correlation_severity="Medium", correlation_score=1) == "Medium"
+    # strong correlation -> +1 capped at Critical
+    assert escalate_risk("Medium", "Medium", 0.10,
+                         correlation_severity="High", correlation_score=5) == "High"
+
+
+def test_escalate_risk_caps_at_critical():
+    assert escalate_risk("High", "High", 0.90,
+                         detection_severity="Critical",
+                         correlation_severity="Critical", correlation_score=10) == "Critical"
+
+
+def test_escalate_risk_nan_inputs_do_not_crash():
+    import math
+    assert escalate_risk("High", "High", float("nan")) == "High"
+    assert escalate_risk(None, None, None) == "Informational"
+
+
+# -----------------------------
+# remediation engine (v3 structured)
+# -----------------------------
+
+def test_remediation_returns_structured_dict():
+    r = get_remediation_dict("SQL Injection")
+    assert set(r.keys()) == {"why_it_matters", "impact", "fix", "best_practice"}
+    assert "parameterized" in r["fix"].lower() or "prepared" in r["fix"].lower()
+
+
+def test_remediation_unknown_attack_uses_fallback():
+    r = get_remediation_dict("Brand New Attack")
+    assert "manual" in r["fix"].lower() or "classify" in r["fix"].lower()
+
+
+def test_remediation_string_has_all_sections():
+    s = get_remediation("SQL Injection")
+    assert "Why it matters" in s
+    assert "Impact" in s
+    assert "Fix" in s
+    assert "Best practice" in s
+
+
+# -----------------------------
+# hybrid weights sanity (v3 honesty)
+# -----------------------------
+
+def test_hybrid_weights_sum_to_one():
+    assert abs(sum(HYBRID_WEIGHTS.values()) - 1.0) < 1e-9
