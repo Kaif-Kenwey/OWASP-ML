@@ -2,6 +2,7 @@ import os
 import pandas as pd
 
 from ml.encodings import RISK_ORDER, risk_index, risk_from_index
+from remediation.remedy_engine import get_remediation
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -124,6 +125,9 @@ def generate_threat_report():
     combined["ML_Confidence_%"] = (combined["hybrid_score"] * 100).round(2)
 
     combined["Explanation"] = combined.apply(generate_explanation, axis=1)
+
+    # per-finding fix guidance from remediation/remedy_engine.py
+    combined["Remediation"] = combined["alert_name"].apply(get_remediation)
 
     combined.to_csv(OUTPUT_PATH, index=False)
 

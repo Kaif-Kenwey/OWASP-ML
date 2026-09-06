@@ -133,6 +133,7 @@ def process_alerts(raw_scan_path=None):
             "cweid": cwe,
             "cwe_numeric": cwe_numeric,
             "attack_type": map_to_attack(cwe),
+            "alert_name": alert.get("alert", ""),
             "method": method,
             "url": url,
             "url_length": len(url),
