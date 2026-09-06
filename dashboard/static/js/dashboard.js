@@ -383,6 +383,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const drawerClose = document.getElementById("drawerClose");
 
     function openDrawer(row) {
+        // expose for the inline 'view' action button (delegated click handler)
+        window._openFindingDrawer = openDrawer;
         let f = {};
         try { f = JSON.parse(row.dataset.finding || "{}"); } catch (e) { f = {}; }
         drawerTitle.textContent = f.alert_name || "Finding";
@@ -1207,3 +1209,134 @@ document.addEventListener("DOMContentLoaded", function () {
             inst.update();
         });
     }, 200);
+
+    // =====================================================
+    // REPORTS: GROUP-BY SELECTOR
+    // =====================================================
+    // Groups the table rows by the selected dimension. Inserts a sticky
+    // group-header row before each group's rows, with a count + collapse toggle.
+    // Grouping is applied AFTER filtering + sorting, and re-applies pagination.
+    var groupBySel = document.getElementById("groupBy");
+    function applyGroupBy() {
+        var rb = document.getElementById("reportBody");
+        if (!rb) return;
+        var dim = groupBySel ? groupBySel.value : "";
+        // remove old group headers
+        rb.querySelectorAll("tr.group-header").forEach(function (r) { r.remove(); });
+        if (!dim) { return; }
+        // map dim -> the row attribute to group by
+        var attr = { severity: "severity", attack: "attack", owasp: "owasp",
+                     method: "method", detection: "detectionRule" }[dim];
+        if (!attr) return;
+        // collect rows in current DOM order (already sorted)
+        var rows = Array.prototype.slice.call(rb.querySelectorAll("tr.report-row"));
+        var groups = {};
+        var groupOrder = [];
+        rows.forEach(function (r) {
+            var key = r.dataset[attr] || r.dataset[dim] || "(none)";
+            if (dim === "detection") {
+                key = r.dataset.finding ? (function () {
+                    try { return JSON.parse(r.dataset.finding).detection_rule || "—"; } catch (e) { return "—"; }
+                })() : "—";
+            }
+            if (!groups[key]) { groups[key] = []; groupOrder.push(key); }
+            groups[key].push(r);
+        });
+        // re-insert: for each group, add a header row + its members
+        groupOrder.forEach(function (key) {
+            var members = groups[key];
+            var header = document.createElement("tr");
+            header.className = "group-header";
+            header.innerHTML = '<td colspan="12">' + key + '<span class="gh-count">' + members.length + '</span>' +
+                '<span class="gh-toggle" title="collapse group">▼</span></td>';
+            var collapsed = false;
+            header.querySelector(".gh-toggle").addEventListener("click", function (e) {
+                e.stopPropagation();
+                collapsed = !collapsed;
+                members.forEach(function (m) { m.style.display = collapsed ? "none" : ""; });
+                header.querySelector(".gh-toggle").textContent = collapsed ? "▶" : "▼";
+            });
+            rb.insertBefore(header, members[0]);
+        });
+    }
+    if (groupBySel) {
+        groupBySel.addEventListener("change", function () {
+            applyGroupBy();
+            // re-mark filter visibility + re-paginate
+            document.dispatchEvent(new CustomEvent("reportFiltersChanged"));
+        });
+        // restore persisted group-by
+        try {
+            var savedGb = localStorage.getItem("owasp_ml_groupby");
+            if (savedGb && groupBySel.querySelector('option[value="' + savedGb + '"]')) {
+                groupBySel.value = savedGb;
+            }
+        } catch (e) {}
+        groupBySel.addEventListener("change", function () {
+            try { localStorage.setItem("owasp_ml_groupby", groupBySel.value); } catch (e) {}
+        });
+    }
+    // re-apply grouping after sorting (sort reorders rows)
+    document.addEventListener("reportFiltersChanged", function () {
+        // grouping survives filtering (rows just get hidden), but sorting reorders
+        // so we re-group after a sort. The sort handler calls applyReportFilters ->
+        // dispatches this event. Re-apply only if a group dim is selected.
+        if (groupBySel && groupBySel.value) {
+            // defer so the sort's row reordering completes first
+            setTimeout(applyGroupBy, 0);
+        }
+    });
+
+    // =====================================================
+    // REPORTS: INLINE 'VIEW' ACTION BUTTON
+    // =====================================================
+    // Delegate clicks so it works after re-ordering / grouping.
+    document.addEventListener("click", function (e) {
+        var btn = e.target.closest(".row-action[data-finding-id]");
+        if (!btn) return;
+        e.stopPropagation();
+        // find the parent row + open its drawer
+        var row = btn.closest("tr.report-row");
+        if (row && row.dataset.finding) {
+            // trigger the same drawer-open logic the row click uses
+            var evt = new MouseEvent("click", { bubbles: true });
+            // the row click handler reads data-finding; simulate it
+            var drawer = document.getElementById("findingDrawer");
+            if (drawer && typeof window._openFindingDrawer === "function") {
+                window._openFindingDrawer(row);
+            } else {
+                row.dispatchEvent(evt);
+            }
+        }
+    });
+
+    // =====================================================
+    // ML INSIGHTS: PER-CLASS TABLE SORTABLE
+    // =====================================================
+    var classPerfTable = document.getElementById("classPerfTable");
+    if (classPerfTable) {
+        var cpHeaders = classPerfTable.querySelectorAll("th.sortable");
+        var cpSortState = { col: null, dir: 1 };
+        cpHeaders.forEach(function (th) {
+            th.addEventListener("click", function () {
+                var col = th.dataset.sort;
+                if (cpSortState.col === col) cpSortState.dir = -cpSortState.dir;
+                else { cpSortState.col = col; cpSortState.dir = 1; }
+                cpHeaders.forEach(function (h) { var a = h.querySelector(".arrow"); if (a) a.textContent = ""; });
+                var arrow = th.querySelector(".arrow");
+                if (arrow) arrow.textContent = cpSortState.dir > 0 ? "▲" : "▼";
+                var tbody = classPerfTable.querySelector("tbody");
+                var rows = Array.prototype.slice.call(tbody.querySelectorAll("tr"));
+                rows.sort(function (a, b) {
+                    var av = a.dataset[col] || "", bv = b.dataset[col] || "";
+                    var an = parseFloat(av), bn = parseFloat(bv);
+                    if (!isNaN(an) && !isNaN(bn)) { av = an; bv = bn; }
+                    else { av = String(av).toLowerCase(); bv = String(bv).toLowerCase(); }
+                    if (av < bv) return -1 * cpSortState.dir;
+                    if (av > bv) return 1 * cpSortState.dir;
+                    return 0;
+                });
+                rows.forEach(function (r) { tbody.appendChild(r); });
+            });
+        });
+    }

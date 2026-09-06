@@ -80,6 +80,17 @@
         </div>
     </div>
     <label class="pagesize-wrap">
+        <span class="toolbar-note">group by</span>
+        <select id="groupBy" class="filter-select" style="padding:6px 8px;">
+            <option value="">none</option>
+            <option value="severity">severity</option>
+            <option value="attack">attack type</option>
+            <option value="owasp">OWASP category</option>
+            <option value="method">method</option>
+            <option value="detection">detection rule</option>
+        </select>
+    </label>
+    <label class="pagesize-wrap">
         <span class="toolbar-note">rows / page</span>
         <select id="pageSize" class="filter-select" style="padding:6px 8px;">
             <option value="25">25</option>
@@ -159,7 +170,7 @@
                     data-sort-hybrid="{{ r.hybrid_score }}"
                     data-finding='{{ r | tojson }}'>
                     <td class="col-severity"><span class="badge {{ r.sev }}">{{ r.severity }}</span></td>
-                    <td class="col-finding finding-cell"><span class="finding-name" title="{{ r.alert_name }}">{{ r.alert_name }}</span><span class="finding-id">{{ r.finding_id }}</span></td>
+                    <td class="col-finding finding-cell"><span class="finding-name" title="{{ r.alert_name }}">{{ r.alert_name }}</span><span class="finding-id">{{ r.finding_id }}</span><button class="row-action" data-finding-id="{{ r.finding_id }}" title="open detail">view</button></td>
                     <td class="col-attack">{{ r.attack_type }}</td>
                     <td class="col-owasp small">{{ r.owasp }}</td>
                     <td class="col-cwe mono">{{ r.cwe }}</td>

@@ -64,18 +64,22 @@
     <div class="card">
         <div class="card-head"><h2>Per-Class Performance</h2></div>
         <div class="table-wrap">
-            <table class="data-table">
+            <table class="data-table" id="classPerfTable">
                 <thead>
-                    <tr><th>Risk Class</th><th>Precision</th><th>Recall</th><th>F1</th><th>Support</th></tr>
+                    <tr><th class="sortable" data-sort="label">Risk Class <span class="arrow"></span></th><th class="sortable num" data-sort="precision">Precision <span class="arrow"></span></th><th class="sortable num" data-sort="recall">Recall <span class="arrow"></span></th><th class="sortable num" data-sort="f1">F1 <span class="arrow"></span></th><th class="sortable num" data-sort="support">Support <span class="arrow"></span></th></tr>
                 </thead>
                 <tbody>
                     {% for row in class_rows %}
-                    <tr>
+                    <tr data-label="{{ row.label | lower }}"
+                        data-precision="{{ row.precision or 0 }}"
+                        data-recall="{{ row.recall or 0 }}"
+                        data-f1="{{ row.f1 or 0 }}"
+                        data-support="{{ row.support or 0 }}">
                         <td><span class="badge {{ row.label | lower }}">{{ row.label }}</span></td>
-                        <td>{{ '%.2f' | format(row.precision or 0) }}</td>
-                        <td>{{ '%.2f' | format(row.recall or 0) }}</td>
-                        <td>{{ '%.2f' | format(row.f1 or 0) }}</td>
-                        <td class="mono">{{ '%.0f' | format(row.support or 0) }}</td>
+                        <td class="num-cell">{{ '%.2f' | format(row.precision or 0) }}</td>
+                        <td class="num-cell">{{ '%.2f' | format(row.recall or 0) }}</td>
+                        <td class="num-cell">{{ '%.2f' | format(row.f1 or 0) }}</td>
+                        <td class="mono num-cell">{{ '%.0f' | format(row.support or 0) }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
