@@ -186,6 +186,59 @@ def _risk_counts(df):
     return {label: int(counts.get(label, 0)) for label in RISK_ORDER}
 
 
+def _attack_surface(df):
+    """Attack-surface summary: distinct endpoints/hosts, avg findings per endpoint,
+    top host, and detection+correlation counts.
+
+    Cheap to compute (groupby + counts) and gives the analyst a single-glance
+    read of the attack surface without reading the whole table.
+    """
+    if df.empty:
+        return {"endpoints": 0, "hosts": 0, "avg_per_endpoint": 0,
+                "top_host": "—", "top_host_count": 0, "total": 0}
+    urls = df.get("url", pd.Series(dtype=str)).apply(safe_str)
+    hosts = urls.apply(lambda u: urlparse(u).netloc if isinstance(u, str) and u.startswith("http") else "(unknown)")
+    paths = urls.apply(lambda u: (urlparse(u).path or "/") if isinstance(u, str) and u.startswith("http") else "(unknown)")
+    endpoints = (hosts + paths).dropna()
+    n_hosts = int(hosts.nunique())
+    n_endpoints = int(endpoints.nunique())
+    total = len(df)
+    avg = round(total / n_endpoints, 1) if n_endpoints else 0.0
+    top_host_series = hosts.value_counts().head(1)
+    top_host = safe_str(top_host_series.index[0]) if not top_host_series.empty else "—"
+    top_host_count = int(top_host_series.iloc[0]) if not top_host_series.empty else 0
+    return {
+        "endpoints": n_endpoints,
+        "hosts": n_hosts,
+        "avg_per_endpoint": avg,
+        "top_host": top_host,
+        "top_host_count": top_host_count,
+        "total": total,
+    }
+
+
+def _freshness():
+    """Data freshness: mtime of the threat report, as a human-readable string.
+
+    Used by the hero + footer so the analyst can see at a glance whether the
+    dashboard is showing a stale scan.
+    """
+    import time
+    if not os.path.exists(REPORT_PATH):
+        return {"available": False, "label": "no data", "age_seconds": None}
+    mtime = os.path.getmtime(REPORT_PATH)
+    age = time.time() - mtime
+    if age < 60:
+        label = f"{int(age)}s ago"
+    elif age < 3600:
+        label = f"{int(age // 60)}m ago"
+    elif age < 86400:
+        label = f"{int(age // 3600)}h ago"
+    else:
+        label = f"{int(age // 86400)}d ago"
+    return {"available": True, "label": label, "age_seconds": int(age)}
+
+
 def _threat_activity(df, limit=12):
     """Top findings for the SOC threat-activity feed (severity then score)."""
     if df.empty:
@@ -362,6 +415,10 @@ def dashboard():
         avg_score=avg_score,
         threat_activity=_threat_activity(df),
         attack_matrix=_attack_matrix(df),
+        attack_surface=_attack_surface(df),
+        freshness=_freshness(),
+        n_detections=int(len(detections_df)) if not detections_df.empty else 0,
+        n_correlations=int(len(corr_df)) if not corr_df.empty else 0,
         detection_summary=_detection_summary(detections_df),
         correlation_events=_correlation_events(corr_df),
         top_urls=top_urls,
@@ -478,6 +535,12 @@ def reports():
     attack_types = sorted({r["attack_type"] for r in rows})
     owasp_categories = sorted({r["owasp"] for r in rows})
 
+    # ?rule=RULE-006 -> pre-filter the table to findings that fired that rule.
+    # Lets the dashboard "Detection Rules" panel jump straight into the findings.
+    pre_rule = safe_str(request.args.get("rule"), "").upper()
+    if pre_rule and pre_rule.startswith("RULE-"):
+        rows = [r for r in rows if pre_rule in (safe_str(r.get("detection_rule"), ""))]
+
     return render_template(
         "reports.html",
         has_data=True,
@@ -486,6 +549,7 @@ def reports():
         shown=len(rows[:500]),
         attack_types=attack_types,
         owasp_categories=owasp_categories,
+        pre_rule=pre_rule,
     )
 
 

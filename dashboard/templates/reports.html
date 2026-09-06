@@ -30,7 +30,7 @@
 <!-- ================= TOOLBAR ================= -->
 <div class="toolbar">
     <input type="search" id="reportSearch" class="search-input"
-           placeholder="filter: url, alert, cwe, attack type..." autocomplete="off">
+           placeholder="filter: url, alert, cwe, attack type...  (press /)" autocomplete="off">
     <select class="filter-select" id="filterSeverity" aria-label="filter by severity">
         <option value="">All severities</option>
         {% for s in ['Critical','High','Medium','Low','Informational'] %}
@@ -45,8 +45,17 @@
         <option value="">All OWASP</option>
         {% for o in owasp_categories %}<option value="{{ o }}">{{ o }}</option>{% endfor %}
     </select>
+    <button class="btn btn-ghost" id="clearFilters" title="clear all filters" style="padding:8px 14px;">Clear</button>
     <span class="toolbar-note" id="rowNote">showing {{ shown }} of {{ total }}</span>
 </div>
+
+{% if pre_rule %}
+<div class="banner banner-info" style="margin-bottom:0;">
+    <strong>Filtered by detection rule: {{ pre_rule }}.</strong>
+    Showing only findings where this rule fired.
+    <a href="/reports{{ qp }}" style="color:inherit; text-decoration:underline; margin-left:6px;">clear rule filter →</a>
+</div>
+{% endif %}
 
 <!-- ================= FINDINGS TABLE ================= -->
 <div class="card table-card">
@@ -63,8 +72,8 @@
                     <th class="sortable" data-sort="method">Method <span class="arrow"></span></th>
                     <th class="sortable" data-sort="confidence">Scan Conf <span class="arrow"></span></th>
                     <th class="sortable" data-sort="ml_prediction">ML Pred <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="anomaly_score">Anomaly <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="hybrid_score">Hybrid Score <span class="arrow"></span></th>
+                    <th class="sortable num" data-sort="anomaly_score">Anomaly <span class="arrow"></span></th>
+                    <th class="sortable num" data-sort="hybrid_score">Hybrid Score <span class="arrow"></span></th>
                     <th>Detection</th>
                 </tr>
             </thead>
@@ -72,19 +81,30 @@
                 {% for r in rows %}
                 <tr class="report-row"
                     data-severity="{{ r.severity }}"
+                    data-severity-rank="{% if r.severity == 'Critical' %}4{% elif r.severity == 'High' %}3{% elif r.severity == 'Medium' %}2{% elif r.severity == 'Low' %}1{% else %}0{% endif %}"
                     data-attack="{{ r.attack_type }}"
                     data-owasp="{{ r.owasp }}"
+                    data-sort-alert="{{ r.alert_name | lower }}"
+                    data-sort-attack="{{ r.attack_type | lower }}"
+                    data-sort-owasp="{{ r.owasp | lower }}"
+                    data-sort-cwe="{{ r.cwe }}"
+                    data-sort-method="{{ r.method | lower }}"
+                    data-sort-confidence="{{ r.confidence | lower }}"
+                    data-sort-ml="{{ r.ml_prediction }}"
+                    data-sort-ml-rank="{% if r.ml_prediction == 'Critical' %}4{% elif r.ml_prediction == 'High' %}3{% elif r.ml_prediction == 'Medium' %}2{% elif r.ml_prediction == 'Low' %}1{% else %}0{% endif %}"
+                    data-sort-anomaly="{{ r.anomaly_score }}"
+                    data-sort-hybrid="{{ r.hybrid_score }}"
                     data-finding='{{ r | tojson }}'>
                     <td><span class="badge {{ r.sev }}">{{ r.severity }}</span></td>
-                    <td>{{ r.alert_name }} <span class="mono faint small">{{ r.finding_id }}</span></td>
+                    <td class="finding-cell"><span class="finding-name" title="{{ r.alert_name }}">{{ r.alert_name }}</span><span class="finding-id">{{ r.finding_id }}</span></td>
                     <td>{{ r.attack_type }}</td>
                     <td class="small">{{ r.owasp }}</td>
                     <td class="mono">{{ r.cwe }}</td>
-                    <td class="path-cell mono small" title="{{ r.url }}">{{ r.path }}</td>
+                    <td class="path-cell mono small"><span class="path-text" title="{{ r.url }}">{{ r.path }}</span></td>
                     <td class="mono">{{ r.method }}</td>
                     <td class="mono">{{ r.confidence }}</td>
                     <td class="mono">{{ r.ml_prediction }}</td>
-                    <td class="mono">{{ '%.3f' | format(r.anomaly_score) }}</td>
+                    <td class="mono num-cell">{{ '%.3f' | format(r.anomaly_score) }}</td>
                     <td class="conf-cell">
                         <span class="conf-bar"><span class="conf-fill" style="width: {{ (r.hybrid_score * 100) | round(1) }}%;"></span></span>
                         <span class="mono">{{ '%.3f' | format(r.hybrid_score) }}</span>
@@ -95,6 +115,14 @@
             </tbody>
         </table>
     </div>
+    <div class="no-results" id="noResults" style="display:none;">
+        <div class="glyph">⊘</div>
+        <div>No findings match the current filters.</div>
+    </div>
+</div>
+<div class="toolbar" style="margin-top:8px;">
+    <span class="toolbar-note"><span class="kbd">/</span> focus search · <span class="kbd">Esc</span> close drawer · click a row for detail</span>
+    <span class="toolbar-note">severity-desc + hybrid-score sort</span>
 </div>
 
 <!-- ================= DETAIL DRAWER ================= -->

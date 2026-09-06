@@ -135,13 +135,56 @@ document.addEventListener("DOMContentLoaded", function () {
     const gaugeNum = document.getElementById("gaugeNum");
     if (gaugeArc && gaugeNum) {
         const pct = Math.max(0, Math.min(100, parseFloat(gaugeNum.textContent) || 0));
-        const total = 235;   // arc path length
+        // Arc path length for the 200x120 viewBox (radius 84, sweep ~263px).
+        // Computed once via getTotalLength() so a viewBox change never desyncs.
+        let total = 263;
+        try { total = gaugeArc.getTotalLength(); } catch (e) { /* keep fallback */ }
         const offset = total - (total * pct / 100);
         requestAnimationFrame(() => {
             gaugeArc.style.transition = "stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1)";
             gaugeArc.style.strokeDashoffset = offset;
         });
     }
+
+    // ---------- Footer freshness label ----------
+    const freshLabel = document.getElementById("freshLabel");
+    if (freshLabel) {
+        // The dashboard route already computed the freshness server-side via
+        // _freshness(); we re-fetch the summary API every 60s so the label
+        // stays fresh without a full page reload.
+        function refreshFreshness() {
+            fetch("/api/summary" + (window.location.search ? window.location.search + "&" : "?") + "_=" + Date.now())
+                .then(r => r.json()).then(d => {
+                    if (d && d.status) {
+                        freshLabel.textContent = "ok";
+                    }
+                }).catch(() => { freshLabel.textContent = "—"; });
+        }
+        freshLabel.textContent = "ok";
+        setInterval(refreshFreshness, 60000);
+    }
+
+    // ---------- Feed copy-to-clipboard ----------
+    document.querySelectorAll(".feed .copy-btn[data-copy]").forEach(function (btn) {
+        btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const url = btn.getAttribute("data-copy") || "";
+            if (!url) return;
+            const done = function () {
+                const orig = btn.textContent;
+                btn.textContent = "✓"; btn.style.color = "var(--green)";
+                setTimeout(() => { btn.textContent = orig; btn.style.color = ""; }, 1200);
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(url).then(done).catch(() => {});
+            } else {
+                const ta = document.createElement("textarea"); ta.value = url;
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand("copy"); done(); } catch (e2) {}
+                document.body.removeChild(ta);
+            }
+        });
+    });
 
     // =====================================================
     // REPORTS PAGE -- search + filters + sort + drawer
@@ -150,6 +193,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const sevFilter = document.getElementById("filterSeverity");
     const attackFilter = document.getElementById("filterAttack");
     const owaspFilter = document.getElementById("filterOwasp");
+    const clearBtn = document.getElementById("clearFilters");
+    const noResults = document.getElementById("noResults");
     const reportBody = document.getElementById("reportBody");
     const rowNote = document.getElementById("rowNote");
 
@@ -173,10 +218,33 @@ document.addEventListener("DOMContentLoaded", function () {
         if (rowNote) {
             rowNote.textContent = visible + " shown (of " + (reportBody.querySelectorAll("tr").length) + ")";
         }
+        if (noResults) {
+            noResults.style.display = visible === 0 ? "block" : "none";
+        }
     }
     [searchBox, sevFilter, attackFilter, owaspFilter].forEach(function (el) {
         if (el) el.addEventListener("input", applyReportFilters);
         if (el) el.addEventListener("change", applyReportFilters);
+    });
+    if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+            if (searchBox) searchBox.value = "";
+            if (sevFilter) sevFilter.value = "";
+            if (attackFilter) attackFilter.value = "";
+            if (owaspFilter) owaspFilter.value = "";
+            applyReportFilters();
+            // also drop any ?rule= query so "clear" fully resets
+            if (window.location.search.indexOf("rule=") !== -1) {
+                window.location.href = window.location.pathname;
+            }
+        });
+    }
+    // '/' focuses the search box (unless the user is already typing in a field)
+    document.addEventListener("keydown", function (e) {
+        if (e.key === "/" && document.activeElement.tagName !== "INPUT" &&
+            document.activeElement.tagName !== "SELECT" && document.activeElement.tagName !== "TEXTAREA") {
+            if (searchBox) { e.preventDefault(); searchBox.focus(); }
+        }
     });
     if (reportBody) applyReportFilters();
 
@@ -185,6 +253,19 @@ document.addEventListener("DOMContentLoaded", function () {
     if (table) {
         const headers = table.querySelectorAll("th.sortable");
         let sortState = { col: null, dir: 1 };
+        // map data-sort value -> the row data attribute that holds the sort key
+        const colToAttr = {
+            "severity": "severityRank",
+            "alert_name": "sortAlert",
+            "attack_type": "sortAttack",
+            "owasp": "sortOwasp",
+            "cwe": "sortCwe",
+            "method": "sortMethod",
+            "confidence": "sortConfidence",
+            "ml_prediction": "sortMlRank",
+            "anomaly_score": "sortAnomaly",
+            "hybrid_score": "sortHybrid",
+        };
         headers.forEach(function (th) {
             th.addEventListener("click", function () {
                 const col = th.dataset.sort;
@@ -193,32 +274,20 @@ document.addEventListener("DOMContentLoaded", function () {
                 headers.forEach(h => h.querySelector(".arrow").textContent = "");
                 th.querySelector(".arrow").textContent = sortState.dir > 0 ? "▲" : "▼";
 
+                const attr = colToAttr[col] || col;
                 const rows = Array.from(reportBody.querySelectorAll("tr"));
-                const sevRank = { Critical: 4, High: 3, Medium: 2, Low: 1, Informational: 0 };
                 rows.sort(function (a, b) {
-                    const av = (a.dataset[col] !== undefined ? a.dataset[col] : a.querySelector(`td[data-${col}]`)?.textContent) || "";
-                    const bv = (b.dataset[col] !== undefined ? b.dataset[col] : b.querySelector(`td[data-${col}]`)?.textContent) || "";
-                    let va, vb;
-                    if (col === "severity" || col === "ml_prediction") {
-                        va = sevRank[av] !== undefined ? sevRank[av] : -1;
-                        vb = sevRank[bv] !== undefined ? sevRank[bv] : -1;
-                    } else if (col === "anomaly_score" || col === "hybrid_score") {
-                        // read from the cell's numeric content
-                        const ar = a.querySelector(".conf-cell .mono");
-                        const br = b.querySelector(".conf-cell .mono");
-                        va = ar ? parseFloat(ar.textContent) : 0;
-                        vb = br ? parseFloat(br.textContent) : 0;
-                        if (col === "anomaly_score") {
-                            va = parseFloat((a.children[8] || {}).textContent) || 0;
-                            vb = parseFloat((b.children[8] || {}).textContent) || 0;
-                        }
-                    } else if (col === "cwe" || col === "confidence") {
-                        va = av; vb = bv;
+                    let av = a.dataset[attr] || "";
+                    let bv = b.dataset[attr] || "";
+                    // numeric for the score columns
+                    if (col === "anomaly_score" || col === "hybrid_score" || col === "cwe" ||
+                        col === "severity" || col === "ml_prediction") {
+                        av = parseFloat(av) || 0; bv = parseFloat(bv) || 0;
                     } else {
-                        va = av.toLowerCase(); vb = bv.toLowerCase();
+                        av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
                     }
-                    if (va < vb) return -1 * sortState.dir;
-                    if (va > vb) return 1 * sortState.dir;
+                    if (av < bv) return -1 * sortState.dir;
+                    if (av > bv) return 1 * sortState.dir;
                     return 0;
                 });
                 rows.forEach(r => reportBody.appendChild(r));
