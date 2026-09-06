@@ -409,6 +409,7 @@ def dashboard():
             "labels": [shorten_label(a, 34) for a in owasp_counts.index],
             "values": [int(v) for v in owasp_counts.values],
             "full_labels": [str(a) for a in owasp_counts.index],
+            "descriptions": [owasp_description(str(a)) for a in owasp_counts.index],
         },
         "method": {
             "labels": [shorten_label(a) for a in method_counts.index],

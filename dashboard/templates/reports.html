@@ -180,8 +180,15 @@
                     <td class="col-ml_prediction mono">{{ r.ml_prediction }}</td>
                     <td class="col-anomaly mono num-cell">{{ '%.3f' | format(r.anomaly_score) }}</td>
                     <td class="col-hybrid conf-cell">
-                        <span class="conf-bar"><span class="conf-fill" style="width: {{ (r.hybrid_score * 100) | round(1) }}%;"></span></span>
-                        <span class="mono">{{ '%.3f' | format(r.hybrid_score) }}</span>
+                        <div class="risk-bar-wrap" title="Hybrid Threat Score: {{ '%.3f' | format(r.hybrid_score) }} (thresholds: 0.25 / 0.50 / 0.75)">
+                            <div class="risk-bar">
+                                <span class="risk-thresh" style="left:25%"></span>
+                                <span class="risk-thresh" style="left:50%"></span>
+                                <span class="risk-thresh" style="left:75%"></span>
+                                <span class="risk-fill" style="width: {{ (r.hybrid_score * 100) | round(1) }}%;"></span>
+                            </div>
+                            <span class="mono risk-val">{{ '%.3f' | format(r.hybrid_score) }}</span>
+                        </div>
                     </td>
                     <td class="col-detection mono small">{{ r.detection_rule }}</td>
                 </tr>

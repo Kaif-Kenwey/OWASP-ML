@@ -1174,3 +1174,40 @@ tr.report-row[data-severity="High"] td.col-severity { background: rgba(239, 68, 
 tr.report-row[data-severity="Medium"] td.col-severity { background: rgba(245, 158, 11, 0.10) !important; }
 tr.report-row[data-severity="Low"] td.col-severity { background: rgba(52, 211, 153, 0.08) !important; }
 tr.report-row[data-severity="Informational"] td.col-severity { background: var(--panel-3) !important; }
+
+/* =====================================================
+   REPORTS: RISK BAR WITH THRESHOLD MARKERS
+   ===================================================== */
+.risk-bar-wrap { display: flex; align-items: center; gap: 8px; min-width: 100px; }
+.risk-bar {
+    position: relative; flex: 1; height: 6px; min-width: 50px;
+    background: var(--panel-3); border-radius: 999px; overflow: visible;
+    border: 1px solid var(--line);
+}
+.risk-fill {
+    position: absolute; top: 0; left: 0; height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--green) 0%, var(--medium) 50%, var(--critical) 100%);
+    transition: width 0.3s ease;
+}
+.risk-thresh {
+    position: absolute; top: -2px; width: 1px; height: 10px;
+    background: var(--ink-faint); opacity: 0.5;
+}
+.risk-val { font-size: 10.5px; color: var(--ink-soft); min-width: 38px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* =====================================================
+   ML INSIGHTS: CM TOGGLE AS STYLED SEGMENTED CONTROL
+   ===================================================== */
+.cm-toggle-group {
+    display: inline-flex; gap: 0; border: 1px solid var(--line-strong);
+    border-radius: var(--radius-sm); overflow: hidden;
+    background: var(--panel-3);
+}
+.cm-toggle-group .cm-seg {
+    padding: 5px 12px; font-family: var(--mono); font-size: 10.5px;
+    color: var(--ink-soft); cursor: pointer; border: none; background: transparent;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.cm-toggle-group .cm-seg.active { background: var(--cyan-soft); color: var(--cyan); }
+.cm-toggle-group .cm-seg:hover:not(.active) { background: rgba(34,211,238,0.06); color: var(--ink); }

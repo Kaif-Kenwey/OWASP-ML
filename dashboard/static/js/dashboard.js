@@ -166,17 +166,25 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ---------- Dashboard: OWASP categories (full labels in tooltip) ----------
+    // ---------- Dashboard: OWASP categories (full labels + descriptions in tooltip) ----------
     const owaspCanvas = document.getElementById("owaspChart");
     if (owaspCanvas && data.owasp) {
         var owaspFull = data.owasp.full_labels || data.owasp.labels;
+        var owaspDescs = data.owasp.descriptions || [];
         new Chart(owaspCanvas, {
             type: "bar",
             data: { labels: data.owasp.labels, datasets: [{ data: data.owasp.values, backgroundColor: GREEN, borderRadius: 5 }] },
             options: Object.assign({}, baseBarOptions(true), {
                 plugins: Object.assign({}, baseBarOptions(true).plugins, {
                     tooltip: Object.assign({}, (baseBarOptions(true).plugins || {}).tooltip || {}, {
-                        callbacks: { title: function (ctx) { return owaspFull[ctx[0].dataIndex] || ctx[0].label; } }
+                        callbacks: {
+                            title: function (ctx) { return owaspFull[ctx[0].dataIndex] || ctx[0].label; },
+                            label: function (ctx) {
+                                var desc = owaspDescs[ctx.dataIndex];
+                                var v = ctx.parsed.x !== undefined ? ctx.parsed.x : ctx.parsed.y;
+                                return " " + v + " findings" + (desc ? "  ·  " + desc : "");
+                            }
+                        }
                     })
                 })
             })
@@ -1456,14 +1464,15 @@ document.addEventListener("DOMContentLoaded", function () {
     // =====================================================
     var cmTable = document.querySelector(".cm-table");
     if (cmTable) {
-        // add a toggle button in the card head
+        // add a styled segmented toggle (raw counts / normalized %) in the card head
         var cmCard = cmTable.closest(".card");
         if (cmCard) {
             var cmHead = cmCard.querySelector(".card-head");
             if (cmHead) {
-                var toggle = document.createElement("button");
-                toggle.className = "btn btn-ghost"; toggle.textContent = "raw counts";
-                toggle.style.cssText = "padding:5px 11px;font-size:11px;";
+                var group = document.createElement("div");
+                group.className = "cm-toggle-group";
+                group.innerHTML = '<button class="cm-seg active" data-mode="raw">raw counts</button>' +
+                    '<button class="cm-seg" data-mode="norm">normalized %</button>';
                 var normalized = false;
                 // capture the raw values once
                 var rawCells = Array.prototype.map.call(cmTable.querySelectorAll("td.cm-cell"), function (td) {
@@ -1478,13 +1487,10 @@ document.addEventListener("DOMContentLoaded", function () {
                     });
                     rowTotals.push(sum);
                 });
-                toggle.addEventListener("click", function () {
-                    normalized = !normalized;
-                    toggle.textContent = normalized ? "normalized %" : "raw counts";
-                    var ri = 0, ci = 0;
+                function applyMode() {
+                    var nCols = Math.round(Math.sqrt(rawCells.length)) || 1;
                     rawCells.forEach(function (c, i) {
-                        // determine row index for this cell
-                        var cellRow = Math.floor(i / (Math.sqrt(rawCells.length) || 1));
+                        var cellRow = Math.floor(i / nCols);
                         var total = rowTotals[cellRow] || 1;
                         if (normalized) {
                             c.el.textContent = ((c.val / total) * 100).toFixed(0) + "%";
@@ -1492,8 +1498,15 @@ document.addEventListener("DOMContentLoaded", function () {
                             c.el.textContent = String(c.val);
                         }
                     });
+                }
+                group.querySelectorAll(".cm-seg").forEach(function (btn) {
+                    btn.addEventListener("click", function () {
+                        normalized = (btn.dataset.mode === "norm");
+                        group.querySelectorAll(".cm-seg").forEach(function (b) { b.classList.toggle("active", b === btn); });
+                        applyMode();
+                    });
                 });
-                cmHead.appendChild(toggle);
+                cmHead.appendChild(group);
             }
         }
     }
