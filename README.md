@@ -1,11 +1,12 @@
-# OWASP-ML
-# 🔐 OWASP AI Threat Intelligence System
-### Detection Engineering Model using SIEM + Machine Learning
+# 🔐 OWASP-ML — AI Threat Intelligence System
+### Detection Engineering with OWASP ZAP + Machine Learning
 
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)
 ![License: MIT](https://img.shields.io/badge/license-MIT-green)
 ![CI](https://github.com/Kaif-Kenwey/OWASP-ML/actions/workflows/ci.yml/badge.svg)
 ![scikit-learn](https://img.shields.io/badge/scikit--learn-1.4%2B-F7931E?logo=scikit-learn&logoColor=white)
+
+![Threat Intelligence Dashboard](assets/dashboard.png)
 
 ## 📌 Overview
 
@@ -86,6 +87,10 @@ Flask + Chart.js, three pages:
 - **ML Insights** (`/ml-insights`) — training metrics from the last run plus the confusion matrix
 - **Reports** (`/reports`) — the full finding table, searchable and filterable by severity, with CSV export
 
+| ML Insights — model quality | Reports — every finding |
+|---|---|
+| ![ML Insights](assets/ml-insights.png) | ![Reports](assets/reports.png) |
+
 Run it with `python dashboard/app.py` and open http://127.0.0.1:5000. It reads the generated files under `data/`, so run the pipeline at least once first (demo mode counts).
 
 ## 🧱 Architecture
@@ -127,6 +132,7 @@ OWASP-ML/
 ├── LICENSE                      # MIT
 ├── README.md
 ├── MODEL_CARD.md                # honest model documentation
+├── assets/                      # dashboard screenshots
 ├── scanner/
 │   ├── __init__.py
 │   └── zap_scan.py              # ZAP API client: spider + active scan + alert fetch
