@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 
+from ml.encodings import RISK_ORDER, risk_index, risk_from_index
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 FINAL_RESULTS_PATH = os.path.join(BASE_DIR, "data", "final_results.csv")
@@ -32,22 +34,31 @@ def map_owasp_category(attack_type):
 # -----------------------------
 # FINAL RISK ESCALATION LOGIC
 # -----------------------------
+def _risk_level(risk):
+    """Position on the ZAP risk scale; unknown/missing labels are treated
+    as Informational (the honest floor — never inflate a risk)."""
+    return risk_index(risk)
+
 
 def escalate_risk(original_risk, predicted_risk, hybrid_score):
+    """
+    Final risk in v2 uses ALL three signals (the old version ignored
+    original_risk entirely):
 
-    # Critical if extremely strong ML confidence
-    if hybrid_score >= 0.70:
-        return "Critical"
+      1. Base = the MORE SEVERE of scanner risk and ML predicted risk.
+      2. Escalate one level if the hybrid score is very strong (>= 0.75),
+         capped at Critical.
 
-    # High if ML strongly predicts High OR strong hybrid
-    if predicted_risk == "High" or hybrid_score >= 0.55:
-        return "High"
+    This keeps the scanner's judgment authoritative while still letting
+    strong ML confidence promote borderline findings.
+    """
+    base = max(_risk_level(original_risk), _risk_level(predicted_risk))
 
-    # Medium for moderate confidence
-    if hybrid_score >= 0.45:
-        return "Medium"
+    if hybrid_score is not None and hybrid_score >= 0.75:
+        base = min(base + 1, _risk_level("Critical"))
 
-    return "Low"
+    return risk_from_index(base)
+
 
 # -----------------------------
 # EXPLANATION ENGINE
@@ -56,16 +67,16 @@ def generate_explanation(row):
 
     reasons = []
 
-    if row["has_query_params"] == 1:
+    if row.get("has_query_params", 0) == 1:
         reasons.append("URL contains query parameters")
 
-    if row["attack_type"] in ["SQL Injection", "Cross Site Scripting (XSS)", "Command Injection"]:
+    if row.get("attack_type", "Other") in ["SQL Injection", "Cross Site Scripting (XSS)", "Command Injection"]:
         reasons.append("Injection-related CWE detected")
 
-    if row["url_length"] > 60:
+    if row.get("url_length", 0) > 60:
         reasons.append("Long URL structure")
 
-    if row["confidence"] == "High":
+    if row.get("confidence", "") == "High":
         reasons.append("High scanner confidence")
 
     if not reasons:
@@ -81,16 +92,23 @@ def generate_threat_report():
 
     if not os.path.exists(FINAL_RESULTS_PATH):
         print("No ML results found.")
-        return
+        return None
 
     if not os.path.exists(PROCESSED_PATH):
         print("No processed alerts found.")
-        return
+        return None
 
     ml_df = pd.read_csv(FINAL_RESULTS_PATH)
     processed_df = pd.read_csv(PROCESSED_PATH)
 
-    combined = pd.concat([processed_df, ml_df], axis=1)
+    if len(ml_df) != len(processed_df):
+        print("Row count mismatch between ML results and processed alerts.")
+        return None
+
+    # positional join is safe only because both frames come from the same
+    # alert ordering; the length check above guards that assumption
+    combined = pd.concat([processed_df.reset_index(drop=True),
+                          ml_df.reset_index(drop=True)], axis=1)
 
     combined["OWASP_Category"] = combined["attack_type"].apply(map_owasp_category)
 
@@ -112,6 +130,9 @@ def generate_threat_report():
     print("\nThreat intelligence report generated:")
     print("Saved to:", OUTPUT_PATH)
     print("Total entries:", len(combined))
+    print("Final risk distribution:", combined["Final_Risk"].value_counts().to_dict())
+
+    return combined
 
 
 if __name__ == "__main__":

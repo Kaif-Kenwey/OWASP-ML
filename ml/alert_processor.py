@@ -3,6 +3,8 @@ import json
 import re
 import pandas as pd
 
+from ml.encodings import encode_confidence, encode_method
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_SCAN_PATH = os.path.join(BASE_DIR, "data", "latest_scan.json")
 PROCESSED_OUTPUT_PATH = os.path.join(BASE_DIR, "data", "processed_latest.csv")
@@ -31,9 +33,12 @@ def map_to_attack(cwe):
         "693": "Security Misconfiguration"
     }
 
-    for key in mapping:
-        if key in cwe_str:
-            return mapping[key]
+    # match whole CWE ids (comma separated in some ZAP responses)
+    cwe_ids = [c.strip() for c in re.split(r"[,\s]+", cwe_str) if c.strip()]
+
+    for cwe_id in cwe_ids:
+        if cwe_id in mapping:
+            return mapping[cwe_id]
 
     return "Other"
 
@@ -45,17 +50,50 @@ def extract_numeric(value):
     return int(match.group()) if match else 0
 
 
+def extract_risk(alert):
+    """
+    Extract the scanner-assigned risk label.
+
+    FIX (v2): the ZAP JSON API exposes the plain label in the `risk` field
+    (e.g. "High"). The old code read `riskdesc`, which is not present in
+    core/view/alerts responses, so every label came out empty and the
+    model silently trained on blank targets. We now read `risk` first
+    and fall back to `riskdesc` only if `risk` is missing.
+    """
+    risk = str(alert.get("risk") or "").strip()
+    if not risk:
+        # fallback: riskdesc looks like "High (Medium Confidence)"
+        risk = str(alert.get("riskdesc") or "").split(" ")[0].strip()
+    return risk if risk else "Informational"
+
+
+def count_references(references):
+    """
+    ZAP returns `reference` as a newline-separated string, not a list.
+    The old check `isinstance(references, list)` was almost never True,
+    so reference_count was always 1. Split on newlines instead.
+    """
+    if isinstance(references, list):
+        return max(len(references), 1)
+    if isinstance(references, str) and references.strip():
+        return len([line for line in references.splitlines() if line.strip()])
+    return 0
+
+
 # ==============================
 # MAIN PROCESSOR
 # ==============================
 
-def process_alerts():
+def process_alerts(raw_scan_path=None):
+    """Turn raw ZAP alerts into engineered features for ML + reporting."""
 
-    if not os.path.exists(RAW_SCAN_PATH):
-        print("No scan file found.")
+    scan_file = raw_scan_path or RAW_SCAN_PATH
+
+    if not os.path.exists(scan_file):
+        print("No scan file found at:", scan_file)
         return pd.DataFrame()
 
-    with open(RAW_SCAN_PATH, "r") as f:
+    with open(scan_file, "r") as f:
         scan_data = json.load(f)
 
     alerts_list = []
@@ -79,7 +117,7 @@ def process_alerts():
     for alert in alerts_list:
 
         url = alert.get("url", "")
-        risk = alert.get("riskdesc", "").split(" ")[0]
+        risk = extract_risk(alert)
         confidence = alert.get("confidence", "")
         cwe = alert.get("cweid", "")
         method = alert.get("method", "")
@@ -93,7 +131,7 @@ def process_alerts():
             "risk": risk,
             "confidence": confidence,
             "cweid": cwe,
-            "cwe_numeric": cwe_numeric,   # 🔥 RESTORED
+            "cwe_numeric": cwe_numeric,
             "attack_type": map_to_attack(cwe),
             "method": method,
             "url": url,
@@ -103,18 +141,19 @@ def process_alerts():
             "path_depth": url.count("/") - 2 if url.startswith("http") else 0,
             "description_length": len(description),
             "solution_length": len(solution),
-            "reference_count": len(references) if isinstance(references, list) else 1
+            "reference_count": count_references(references),
+            "confidence_encoded": encode_confidence(confidence),
+            "method_encoded": encode_method(method)
         })
 
     df = pd.DataFrame(processed)
 
-    df["confidence_encoded"] = df["confidence"].astype("category").cat.codes
-    df["method_encoded"] = df["method"].astype("category").cat.codes
-
+    os.makedirs(os.path.dirname(PROCESSED_OUTPUT_PATH), exist_ok=True)
     df.to_csv(PROCESSED_OUTPUT_PATH, index=False)
 
     print("Processed alerts saved to:", PROCESSED_OUTPUT_PATH)
     print("Total alerts processed:", len(df))
+    print("Risk label distribution:", df["risk"].value_counts().to_dict())
 
     return df
 
