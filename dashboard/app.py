@@ -153,7 +153,14 @@ def url_to_path(url):
         parsed = urlparse(url)
         path = parsed.path or "/"
         if parsed.query:
-            path += "?" + parsed.query
+            # decode percent-encoding for display (ZAP sends %2F, %3F, etc.)
+            # so the dashboard shows /Login.asp?RetURL=/Default.asp? instead of
+            # /Login.asp?RetURL=%2FDefault%2Easp%3F
+            try:
+                from urllib.parse import unquote
+                path += "?" + unquote(parsed.query)
+            except Exception:
+                path += "?" + parsed.query
         return path
     except Exception:
         return str(url)[:80]

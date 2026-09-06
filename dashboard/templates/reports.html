@@ -8,7 +8,11 @@
 {% if has_data %}
 <button class="btn btn-ghost" id="exportFilteredBtn" title="export the currently-filtered rows as CSV" style="padding:8px 14px;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-    Export Filtered
+    Filtered CSV
+</button>
+<button class="btn btn-ghost" id="exportJsonBtn" title="export the currently-filtered rows as JSON" style="padding:8px 14px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+    JSON
 </button>
 <a class="btn btn-accent" href="/download-report{{ qp }}" title="export the full report CSV">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
@@ -97,6 +101,24 @@
 
 <!-- active filter chips (populated by JS) -->
 <div class="filter-chips" id="filterChips" aria-live="polite"></div>
+
+<!-- summary stats strip (reflects the active filter set) -->
+<div class="rpt-summary" id="rptSummary">
+    <div class="rpt-stat" data-sev="Critical"><span class="rs-num" id="rsCrit">0</span><span class="rs-lbl">Critical</span></div>
+    <div class="rpt-stat" data-sev="High"><span class="rs-num" id="rsHigh">0</span><span class="rs-lbl">High</span></div>
+    <div class="rpt-stat" data-sev="Medium"><span class="rs-num" id="rsMed">0</span><span class="rs-lbl">Medium</span></div>
+    <div class="rpt-stat" data-sev="Low"><span class="rs-num" id="rsLow">0</span><span class="rs-lbl">Low</span></div>
+    <div class="rpt-stat" data-sev="Informational"><span class="rs-num" id="rsInfo">0</span><span class="rs-lbl">Info</span></div>
+    <div class="rpt-sep"></div>
+    <div class="rpt-stat neutral"><span class="rs-num" id="rsTotal">0</span><span class="rs-lbl">shown</span></div>
+    <div class="rpt-stat neutral"><span class="rs-num" id="rsAvg">0.00</span><span class="rs-lbl">avg score</span></div>
+    <div class="rpt-sep"></div>
+    <div class="density-toggle">
+        <span class="toolbar-note">density</span>
+        <button class="btn btn-ghost dens-btn active" id="densComfort" style="padding:4px 10px;">Comfort</button>
+        <button class="btn btn-ghost dens-btn" id="densCompact" style="padding:4px 10px;">Compact</button>
+    </div>
+</div>
 
 <!-- ================= FINDINGS TABLE ================= -->
 <div class="card table-card">

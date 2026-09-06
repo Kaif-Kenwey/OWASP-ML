@@ -25,6 +25,35 @@ document.addEventListener("DOMContentLoaded", function () {
     const CYAN = "#22d3ee";
     const GREEN = "#34d399";
 
+    // ---------- Value-labels plugin (shows the number at the end of each bar) ----------
+    // Registered once globally so every horizontal bar chart gets data labels.
+    const valueLabelsPlugin = {
+        id: "owaspValueLabels",
+        afterDatasetsDraw: function (chart) {
+            var ds = chart.data.datasets;
+            if (!ds || !ds.length) return;
+            var ctx = chart.ctx;
+            var meta = chart.getDatasetMeta(0);
+            ctx.save();
+            ctx.font = "600 10px 'JetBrains Mono', monospace";
+            ctx.fillStyle = "#e2e8f0";
+            ctx.textAlign = chart.config.options.indexAxis === "y" ? "left" : "center";
+            ctx.textBaseline = "middle";
+            meta.data.forEach(function (el, i) {
+                var v = ds[0].data[i];
+                if (v === undefined || v === null || v === 0) return;
+                var pos = el.tooltipPosition();
+                var x = chart.config.options.indexAxis === "y" ? pos.x + 6 : pos.x;
+                var y = pos.y;
+                ctx.fillText(String(v), x, y);
+            });
+            ctx.restore();
+        }
+    };
+    if (window.Chart && !Chart.registry.plugins.get("owaspValueLabels")) {
+        Chart.register(valueLabelsPlugin);
+    }
+
     // ---------- Read every JSON payload block on the page ----------
     const data = {};
     document.querySelectorAll('script[type="application/json"]').forEach(function (el) {
@@ -1061,3 +1090,120 @@ document.addEventListener("DOMContentLoaded", function () {
             window.location.href = "/reports?severity=" + encodeURIComponent(pred) + ap;
         });
     });
+
+    // =====================================================
+    // REPORTS: SUMMARY STATS + DENSITY TOGGLE + JSON EXPORT
+    // =====================================================
+    function updateReportSummary() {
+        var rb = document.getElementById("reportBody");
+        if (!rb) return;
+        var rows = Array.prototype.filter.call(rb.querySelectorAll("tr"), function (r) {
+            return r.dataset._filterShow === "true";
+        });
+        var sev = { Critical: 0, High: 0, Medium: 0, Low: 0, Informational: 0 };
+        var scoreSum = 0, scoreN = 0;
+        rows.forEach(function (r) {
+            var s = r.dataset.severity;
+            if (sev.hasOwnProperty(s)) sev[s]++;
+            var f = r.dataset.finding;
+            if (f) {
+                try {
+                    var d = JSON.parse(f);
+                    var sc = parseFloat(d.hybrid_score);
+                    if (!isNaN(sc)) { scoreSum += sc; scoreN++; }
+                } catch (e) {}
+            }
+        });
+        var set = function (id, val) { var el = document.getElementById(id); if (el) el.textContent = val; };
+        set("rsCrit", sev.Critical); set("rsHigh", sev.High); set("rsMed", sev.Medium);
+        set("rsLow", sev.Low); set("rsInfo", sev.Informational);
+        set("rsTotal", rows.length);
+        set("rsAvg", scoreN ? (scoreSum / scoreN).toFixed(2) : "0.00");
+    }
+    document.addEventListener("reportFiltersChanged", updateReportSummary);
+    updateReportSummary();
+
+    // density toggle
+    var densComfort = document.getElementById("densComfort");
+    var densCompact = document.getElementById("densCompact");
+    var reportTableEl = document.getElementById("reportTable");
+    function setDensity(compact) {
+        if (!reportTableEl) return;
+        reportTableEl.classList.toggle("compact", compact);
+        if (densComfort) densComfort.classList.toggle("active", !compact);
+        if (densCompact) densCompact.classList.toggle("active", compact);
+        try { localStorage.setItem("owasp_ml_density", compact ? "compact" : "comfort"); } catch (e) {}
+    }
+    if (densComfort) densComfort.addEventListener("click", function () { setDensity(false); });
+    if (densCompact) densCompact.addEventListener("click", function () { setDensity(true); });
+    // restore persisted density
+    try {
+        var savedDens = localStorage.getItem("owasp_ml_density");
+        if (savedDens === "compact") setDensity(true);
+    } catch (e) {}
+
+    // JSON export (filtered)
+    var exportJsonBtn = document.getElementById("exportJsonBtn");
+    if (exportJsonBtn) {
+        exportJsonBtn.addEventListener("click", function () {
+            var rb = document.getElementById("reportBody");
+            if (!rb) return;
+            var rows = [];
+            rb.querySelectorAll("tr").forEach(function (r) {
+                if (r.dataset._filterShow === "true" && r.dataset.finding) {
+                    try { rows.push(JSON.parse(r.dataset.finding)); } catch (e) {}
+                }
+            });
+            if (!rows.length) { alert("No visible rows to export."); return; }
+            var blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url; a.download = "owasp_ml_findings_" + rows.length + "rows.json";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        });
+    }
+
+    // =====================================================
+    // DASHBOARD: URL-DECODE TOP-VULNERABLE-ENDPOINTS PATHS
+    // The visible textContent is the path+query (percent-encoded by ZAP).
+    // Decode it for readability; leave the title (tooltip) as the full raw
+    // URL so copy-paste stays accurate.
+    // Uses requestAnimationFrame + a micro-delay because the dashboard is
+    // reached through a gateway redirect and the URL list can render a
+    // tick after the script first runs.
+    function decodeUrlPaths() {
+        document.querySelectorAll(".url-path").forEach(function (el) {
+            var raw = el.textContent;
+            if (!raw || raw === "(unknown)") return;
+            if (el.dataset.decoded === "1") return;  // idempotent
+            try {
+                var decoded = decodeURIComponent(raw);
+                if (decoded !== raw) { el.textContent = decoded; el.dataset.decoded = "1"; }
+            } catch (e) { /* leave as-is if malformed */ }
+        });
+    }
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", function () { requestAnimationFrame(decodeUrlPaths); });
+    } else {
+        requestAnimationFrame(function () { setTimeout(decodeUrlPaths, 50); });
+    }
+
+    // =====================================================
+    // DASHBOARD: RISK DONUT LEGEND CLICK-TO-FILTER
+    // =====================================================
+    // Chart.js legend items get a click handler that jumps to reports?severity=
+    // (extends the donut-segment click added earlier)
+    setTimeout(function () {
+        document.querySelectorAll("#riskChart").forEach(function (canvas) {
+            var inst = Chart.getChart(canvas);
+            if (!inst || !inst.legend) return;
+            inst.options.plugins.legend.onClick = function (e, legendItem, legend) {
+                var label = legendItem.text;
+                var port = (window.location.search.match(/XTransformPort=(\d+)/) || [])[1];
+                var ap = port ? "&XTransformPort=" + port : "";
+                window.location.href = "/reports?severity=" + encodeURIComponent(label) + ap;
+            };
+            inst.update();
+        });
+    }, 200);
