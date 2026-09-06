@@ -180,6 +180,7 @@
         {% if cross_target.available %}<span class="chip">{{ cross_target.host_distribution | length }} hosts</span>{% endif %}
     </div>
     {% if cross_target.available %}
+    <div class="grid-2" style="align-items:start;">
     <div class="table-wrap">
         <table class="data-table">
             <thead><tr><th>Held-out Host</th><th>Train</th><th>Test</th><th>Accuracy</th><th>Weighted F1</th><th>Macro F1</th></tr></thead>
@@ -200,6 +201,12 @@
                 {% endfor %}
             </tbody>
         </table>
+    </div>
+    <div>
+        <div class="card-head"><h2 style="font-size:11px;">Generalization Gap (visual)</h2></div>
+        <div class="chart-box chart-box-short"><canvas id="crossTargetChart"></canvas></div>
+        <p class="small muted" style="margin-top:8px;">Bars = accuracy per held-out host. The asymmetry between folds (small-train → low accuracy) is the honest generalization signal.</p>
+    </div>
     </div>
     <p class="small muted" style="margin-top:10px;">{{ cross_target.note }}</p>
     {% else %}
@@ -232,6 +239,19 @@
     <p class="empty-command">python run_pipeline.py --demo</p>
 </div>
 
+{% endif %}
+
+{% if cross_target and cross_target.available %}
+<script type="application/json" id="cross-target-data">{
+  "folds": [
+    {% for f in cross_target.folds %}
+    {"host": "{{ f.held_out_host }}", "train": {{ f.train_samples }}, "test": {{ f.test_samples }},
+     "accuracy": {% if f.accuracy is defined %}{{ f.accuracy }}{% else %}null{% endif %},
+     "weighted_f1": {% if f.weighted_f1 is defined %}{{ f.weighted_f1 }}{% else %}null{% endif %},
+     "macro_f1": {% if f.macro_f1 is defined %}{{ f.macro_f1 }}{% else %}null{% endif %}}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}</script>
 {% endif %}
 
 {% endblock %}

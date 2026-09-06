@@ -195,7 +195,8 @@ def _attack_surface(df):
     """
     if df.empty:
         return {"endpoints": 0, "hosts": 0, "avg_per_endpoint": 0,
-                "top_host": "—", "top_host_count": 0, "total": 0}
+                "top_host": "—", "top_host_count": 0, "total": 0,
+                "host_distribution": []}
     urls = df.get("url", pd.Series(dtype=str)).apply(safe_str)
     hosts = urls.apply(lambda u: urlparse(u).netloc if isinstance(u, str) and u.startswith("http") else "(unknown)")
     paths = urls.apply(lambda u: (urlparse(u).path or "/") if isinstance(u, str) and u.startswith("http") else "(unknown)")
@@ -207,6 +208,11 @@ def _attack_surface(df):
     top_host_series = hosts.value_counts().head(1)
     top_host = safe_str(top_host_series.index[0]) if not top_host_series.empty else "—"
     top_host_count = int(top_host_series.iloc[0]) if not top_host_series.empty else 0
+    # per-host distribution (for the mini donut), capped at 6 + "other"
+    host_counts = hosts.value_counts()
+    host_dist = [{"host": safe_str(h), "count": int(c)} for h, c in host_counts.head(6).items()]
+    if len(host_counts) > 6:
+        host_dist.append({"host": "other", "count": int(host_counts.iloc[6:].sum())})
     return {
         "endpoints": n_endpoints,
         "hosts": n_hosts,
@@ -214,6 +220,7 @@ def _attack_surface(df):
         "top_host": top_host,
         "top_host_count": top_host_count,
         "total": total,
+        "host_distribution": host_dist,
     }
 
 
@@ -402,6 +409,10 @@ def dashboard():
         "score_buckets": {
             "labels": list(score_buckets.keys()),
             "values": list(score_buckets.values()),
+        },
+        "host_donut": {
+            "labels": [h["host"] for h in _attack_surface(df).get("host_distribution", [])],
+            "values": [h["count"] for h in _attack_surface(df).get("host_distribution", [])],
         },
     }
 

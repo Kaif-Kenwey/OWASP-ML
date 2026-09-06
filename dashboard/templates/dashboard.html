@@ -89,11 +89,16 @@
 <!-- ================= ATTACK SURFACE SUMMARY ================= -->
 <div class="card">
     <div class="card-head"><h2>Attack Surface Summary</h2><span class="chip">{{ attack_surface.total }} findings</span></div>
-    <div class="as-grid">
-        <div class="as-stat"><div class="k">Distinct hosts</div><div class="v">{{ attack_surface.hosts }}</div><div class="sub">scanned targets</div></div>
-        <div class="as-stat"><div class="k">Distinct endpoints</div><div class="v">{{ attack_surface.endpoints }}</div><div class="sub">host + path</div></div>
-        <div class="as-stat med"><div class="k">Avg findings / endpoint</div><div class="v">{{ attack_surface.avg_per_endpoint }}</div><div class="sub">density</div></div>
-        <div class="as-stat green"><div class="k">Top host</div><div class="v" title="{{ attack_surface.top_host }}">{{ attack_surface.top_host[:28] }}{% if attack_surface.top_host|length > 28 %}…{% endif %}</div><div class="sub">{{ attack_surface.top_host_count }} findings</div></div>
+    <div class="as-flex">
+        <div class="as-grid">
+            <div class="as-stat"><div class="k">Distinct hosts</div><div class="v">{{ attack_surface.hosts }}</div><div class="sub">scanned targets</div></div>
+            <div class="as-stat"><div class="k">Distinct endpoints</div><div class="v">{{ attack_surface.endpoints }}</div><div class="sub">host + path</div></div>
+            <div class="as-stat med"><div class="k">Avg / endpoint</div><div class="v">{{ attack_surface.avg_per_endpoint }}</div><div class="sub">density</div></div>
+            <div class="as-stat green"><div class="k">Top host</div><div class="v" title="{{ attack_surface.top_host }}">{{ attack_surface.top_host[:22] }}{% if attack_surface.top_host|length > 22 %}…{% endif %}</div><div class="sub">{{ attack_surface.top_host_count }} findings</div></div>
+        </div>
+        <div class="as-donut-wrap">
+            <div class="chart-box chart-box-short" style="min-height:150px;"><canvas id="hostDonut"></canvas></div>
+        </div>
     </div>
 </div>
 

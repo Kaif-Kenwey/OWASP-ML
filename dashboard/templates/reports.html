@@ -6,9 +6,13 @@
 
 {% block topbar_actions %}
 {% if has_data %}
-<a class="btn btn-accent" href="/download-report{{ qp }}">
+<button class="btn btn-ghost" id="exportFilteredBtn" title="export the currently-filtered rows as CSV" style="padding:8px 14px;">
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
-    Export CSV
+    Export Filtered
+</button>
+<a class="btn btn-accent" href="/download-report{{ qp }}" title="export the full report CSV">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+    Full CSV
 </a>
 {% endif %}
 {% endblock %}
@@ -27,7 +31,7 @@
 
 {% else %}
 
-<!-- ================= TOOLBAR ================= -->
+<!-- ================= TOOLBAR (filters) ================= -->
 <div class="toolbar">
     <input type="search" id="reportSearch" class="search-input"
            placeholder="filter: url, alert, cwe, attack type...  (press /)" autocomplete="off">
@@ -49,6 +53,40 @@
     <span class="toolbar-note" id="rowNote">showing {{ shown }} of {{ total }}</span>
 </div>
 
+<!-- ================= TOOLBAR (view controls: columns + page size) ================= -->
+<div class="toolbar" style="margin-top:8px;">
+    <div class="col-toggle-wrap">
+        <button class="btn btn-ghost col-toggle-btn" id="colToggleBtn" style="padding:8px 12px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M15 3v18"/></svg>
+            Columns
+        </button>
+        <div class="col-toggle-menu" id="colToggleMenu" role="menu" aria-hidden="true">
+            <label class="col-toggle-item"><input type="checkbox" data-col="severity" checked> Severity</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="finding" checked> Finding</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="attack" checked> Attack Type</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="owasp" checked> OWASP</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="cwe" checked> CWE</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="path" checked> Path</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="method" checked> Method</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="confidence" checked> Scan Conf</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="ml_prediction" checked> ML Pred</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="anomaly" checked> Anomaly</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="hybrid" checked> Hybrid Score</label>
+            <label class="col-toggle-item"><input type="checkbox" data-col="detection" checked> Detection</label>
+        </div>
+    </div>
+    <label class="pagesize-wrap">
+        <span class="toolbar-note">rows / page</span>
+        <select id="pageSize" class="filter-select" style="padding:6px 8px;">
+            <option value="25">25</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+        </select>
+    </label>
+    <span class="toolbar-note"><span class="kbd">/</span> focus search · <span class="kbd">Esc</span> close drawer · click a row for detail</span>
+</div>
+
 {% if pre_label %}
 <div class="banner banner-info" style="margin-bottom:0;">
     <strong>Filtered by {{ pre_label }}.</strong>
@@ -63,18 +101,18 @@
         <table class="data-table report-table" id="reportTable">
             <thead>
                 <tr>
-                    <th class="sortable" data-sort="severity">Severity <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="alert_name">Finding <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="attack_type">Attack Type <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="owasp">OWASP <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="cwe">CWE <span class="arrow"></span></th>
-                    <th>Path</th>
-                    <th class="sortable" data-sort="method">Method <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="confidence">Scan Conf <span class="arrow"></span></th>
-                    <th class="sortable" data-sort="ml_prediction">ML Pred <span class="arrow"></span></th>
-                    <th class="sortable num" data-sort="anomaly_score">Anomaly <span class="arrow"></span></th>
-                    <th class="sortable num" data-sort="hybrid_score">Hybrid Score <span class="arrow"></span></th>
-                    <th>Detection</th>
+                    <th class="sortable col-severity" data-sort="severity">Severity <span class="arrow"></span></th>
+                    <th class="sortable col-finding" data-sort="alert_name">Finding <span class="arrow"></span></th>
+                    <th class="sortable col-attack" data-sort="attack_type">Attack Type <span class="arrow"></span></th>
+                    <th class="sortable col-owasp" data-sort="owasp">OWASP <span class="arrow"></span></th>
+                    <th class="sortable col-cwe" data-sort="cwe">CWE <span class="arrow"></span></th>
+                    <th class="col-path">Path</th>
+                    <th class="sortable col-method" data-sort="method">Method <span class="arrow"></span></th>
+                    <th class="sortable col-confidence" data-sort="confidence">Scan Conf <span class="arrow"></span></th>
+                    <th class="sortable col-ml_prediction" data-sort="ml_prediction">ML Pred <span class="arrow"></span></th>
+                    <th class="sortable num col-anomaly" data-sort="anomaly_score">Anomaly <span class="arrow"></span></th>
+                    <th class="sortable num col-hybrid" data-sort="hybrid_score">Hybrid Score <span class="arrow"></span></th>
+                    <th class="col-detection">Detection</th>
                 </tr>
             </thead>
             <tbody id="reportBody">
@@ -95,21 +133,21 @@
                     data-sort-anomaly="{{ r.anomaly_score }}"
                     data-sort-hybrid="{{ r.hybrid_score }}"
                     data-finding='{{ r | tojson }}'>
-                    <td><span class="badge {{ r.sev }}">{{ r.severity }}</span></td>
-                    <td class="finding-cell"><span class="finding-name" title="{{ r.alert_name }}">{{ r.alert_name }}</span><span class="finding-id">{{ r.finding_id }}</span></td>
-                    <td>{{ r.attack_type }}</td>
-                    <td class="small">{{ r.owasp }}</td>
-                    <td class="mono">{{ r.cwe }}</td>
-                    <td class="path-cell mono small"><span class="path-text" title="{{ r.url }}">{{ r.path }}</span></td>
-                    <td class="mono">{{ r.method }}</td>
-                    <td class="mono">{{ r.confidence }}</td>
-                    <td class="mono">{{ r.ml_prediction }}</td>
-                    <td class="mono num-cell">{{ '%.3f' | format(r.anomaly_score) }}</td>
-                    <td class="conf-cell">
+                    <td class="col-severity"><span class="badge {{ r.sev }}">{{ r.severity }}</span></td>
+                    <td class="col-finding finding-cell"><span class="finding-name" title="{{ r.alert_name }}">{{ r.alert_name }}</span><span class="finding-id">{{ r.finding_id }}</span></td>
+                    <td class="col-attack">{{ r.attack_type }}</td>
+                    <td class="col-owasp small">{{ r.owasp }}</td>
+                    <td class="col-cwe mono">{{ r.cwe }}</td>
+                    <td class="col-path path-cell mono small"><span class="path-text" title="{{ r.url }}">{{ r.path }}</span></td>
+                    <td class="col-method mono">{{ r.method }}</td>
+                    <td class="col-confidence mono">{{ r.confidence }}</td>
+                    <td class="col-ml_prediction mono">{{ r.ml_prediction }}</td>
+                    <td class="col-anomaly mono num-cell">{{ '%.3f' | format(r.anomaly_score) }}</td>
+                    <td class="col-hybrid conf-cell">
                         <span class="conf-bar"><span class="conf-fill" style="width: {{ (r.hybrid_score * 100) | round(1) }}%;"></span></span>
                         <span class="mono">{{ '%.3f' | format(r.hybrid_score) }}</span>
                     </td>
-                    <td class="mono small">{{ r.detection_rule }}</td>
+                    <td class="col-detection mono small">{{ r.detection_rule }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -119,10 +157,17 @@
         <div class="glyph">⊘</div>
         <div>No findings match the current filters.</div>
     </div>
-</div>
-<div class="toolbar" style="margin-top:8px;">
-    <span class="toolbar-note"><span class="kbd">/</span> focus search · <span class="kbd">Esc</span> close drawer · click a row for detail</span>
-    <span class="toolbar-note">severity-desc + hybrid-score sort</span>
+    <!-- pagination footer -->
+    <div class="pagination" id="pagination">
+        <span class="toolbar-note" id="pageInfo">page 1 of 1 · 0 rows</span>
+        <div class="page-controls">
+            <button class="btn btn-ghost page-btn" id="pageFirst" title="first page" disabled>«</button>
+            <button class="btn btn-ghost page-btn" id="pagePrev" title="prev page" disabled>‹</button>
+            <span class="page-num" id="pageNum">1</span>
+            <button class="btn btn-ghost page-btn" id="pageNext" title="next page">›</button>
+            <button class="btn btn-ghost page-btn" id="pageLast" title="last page">»</button>
+        </div>
+    </div>
 </div>
 
 <!-- ================= DETAIL DRAWER ================= -->

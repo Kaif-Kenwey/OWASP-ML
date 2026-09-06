@@ -228,6 +228,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (noResults) {
             noResults.style.display = visible === 0 ? "block" : "none";
         }
+        // notify the pagination module (outside this closure) that filters changed
+        document.dispatchEvent(new CustomEvent("reportFiltersChanged", { detail: { visible: visible } }));
     }
     [searchBox, sevFilter, attackFilter, owaspFilter].forEach(function (el) {
         if (el) el.addEventListener("input", applyReportFilters);
@@ -638,6 +640,8 @@ document.addEventListener("DOMContentLoaded", function () {
             cmdkList.appendChild(li);
         });
         cmdkList._items = filtered;
+        var cntEl = document.getElementById("cmdkCount");
+        if (cntEl) cntEl.textContent = Math.min(filtered.length, 8) + (filtered.length > 8 ? "+" : "");
     }
     function openCmdk() {
         if (!cmdkBackdrop) return;
@@ -687,5 +691,235 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!cmdkList) return;
         Array.prototype.forEach.call(cmdkList.querySelectorAll(".cmdk-item"), function (el, idx) {
             el.classList.toggle("active", idx === cmdkActive);
+        });
+    }
+
+    // =====================================================
+    // REPORTS: COLUMN TOGGLE DROPDOWN
+    // =====================================================
+    var colToggleBtn = document.getElementById("colToggleBtn");
+    var colToggleMenu = document.getElementById("colToggleMenu");
+    if (colToggleBtn && colToggleMenu) {
+        colToggleBtn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            colToggleMenu.classList.toggle("open");
+            colToggleMenu.setAttribute("aria-hidden", colToggleMenu.classList.contains("open") ? "false" : "true");
+        });
+        document.addEventListener("click", function (e) {
+            if (!colToggleMenu.contains(e.target) && e.target !== colToggleBtn) {
+                colToggleMenu.classList.remove("open");
+                colToggleMenu.setAttribute("aria-hidden", "true");
+            }
+        });
+        colToggleMenu.querySelectorAll("input[data-col]").forEach(function (cb) {
+            cb.addEventListener("change", function () {
+                var col = cb.getAttribute("data-col");
+                var hidden = !cb.checked;
+                document.querySelectorAll(".col-" + col).forEach(function (cell) {
+                    cell.classList.toggle("col-hidden", hidden);
+                });
+            });
+        });
+    }
+
+    // =====================================================
+    // REPORTS: PAGINATION
+    // =====================================================
+    // Pagination state. visibleRows() returns the currently-filtered + sorted
+    // rows (those with display!=='none'). The page size + current page drive
+    // which rows are shown; rows outside the current page get display:none.
+    var pageSizeSel = document.getElementById("pageSize");
+    var pageFirst = document.getElementById("pageFirst");
+    var pagePrev = document.getElementById("pagePrev");
+    var pageNext = document.getElementById("pageNext");
+    var pageLast = document.getElementById("pageLast");
+    var pageNumEl = document.getElementById("pageNum");
+    var pageInfoEl = document.getElementById("pageInfo");
+    var currentPage = 1;
+    var pageSize = 50;
+
+    function _visibleReportRows() {
+        var rb = document.getElementById("reportBody");
+        if (!rb) return [];
+        return Array.prototype.filter.call(rb.querySelectorAll("tr"), function (r) {
+            return r.style.display !== "none";
+        });
+    }
+    function applyPagination() {
+        var rb = document.getElementById("reportBody");
+        var vis = Array.prototype.filter.call(rb ? rb.querySelectorAll("tr") : [], function (r) {
+            return r.dataset._filterShow === "true";
+        });
+        var total = vis.length;
+        var size = pageSize;
+        var pages = Math.max(1, Math.ceil(total / size));
+        if (currentPage > pages) currentPage = pages;
+        if (currentPage < 1) currentPage = 1;
+        var start = (currentPage - 1) * size;
+        vis.forEach(function (row, i) {
+            // keep the search/filter visibility (already set), only override
+            // for pagination hide
+            var inPage = (i >= start && i < start + size);
+            // row.style.display was set by applyReportFilters to "" or "none"
+            // we re-derive: if filter hid it, keep hidden; else page-hide
+            // we stored filter visibility in dataset._filterShow
+            var filterShow = row.dataset._filterShow !== "false";
+            row.style.display = (filterShow && inPage) ? "" : "none";
+        });
+        if (pageNumEl) pageNumEl.textContent = currentPage;
+        if (pageInfoEl) pageInfoEl.textContent = "page " + currentPage + " of " + pages + " · " + total + " rows";
+        if (pageFirst) pageFirst.disabled = currentPage <= 1;
+        if (pagePrev) pagePrev.disabled = currentPage <= 1;
+        if (pageNext) pageNext.disabled = currentPage >= pages;
+        if (pageLast) pageLast.disabled = currentPage >= pages;
+    }
+    if (pageSizeSel) {
+        pageSizeSel.addEventListener("change", function () {
+            pageSize = parseInt(pageSizeSel.value, 10) || 50;
+            currentPage = 1;
+            applyPagination();
+        });
+    }
+    [pageFirst, pagePrev, pageNext, pageLast].forEach(function (btn) {
+        if (!btn) return;
+        btn.addEventListener("click", function () {
+            if (btn === pageFirst) currentPage = 1;
+            else if (btn === pagePrev) currentPage = Math.max(1, currentPage - 1);
+            else if (btn === pageNext) currentPage = currentPage + 1;
+            else if (btn === pageLast) {
+                var vis = _visibleReportRows().length;
+                currentPage = Math.max(1, Math.ceil(vis / pageSize));
+            }
+            applyPagination();
+        });
+    });
+
+    // hook pagination into the filter pipeline via a custom event dispatched by
+    // applyReportFilters (which lives in the DOMContentLoaded closure above).
+    // This avoids the fragile function-wrapper that broke when this code ran
+    // outside DOMContentLoaded and couldn't see the closure variable.
+    document.addEventListener("reportFiltersChanged", function () {
+        var rb = document.getElementById("reportBody");
+        if (rb) {
+            rb.querySelectorAll("tr").forEach(function (r) {
+                r.dataset._filterShow = (r.style.display !== "none") ? "true" : "false";
+            });
+        }
+        currentPage = 1;
+        applyPagination();
+    });
+
+    // =====================================================
+    // REPORTS: EXPORT FILTERED CSV
+    // =====================================================
+    var exportFilteredBtn = document.getElementById("exportFilteredBtn");
+    if (exportFilteredBtn) {
+        exportFilteredBtn.addEventListener("click", function () {
+            // collect the finding JSON from each currently-visible (filter+page) row
+            var rows = [];
+            // Use the filter-visible rows (not just the current page) so the
+            // export respects the active filters but ignores pagination.
+            var rb = document.getElementById("reportBody");
+            if (rb) {
+                rb.querySelectorAll("tr").forEach(function (r) {
+                    if (r.dataset._filterShow === "true" && r.dataset.finding) {
+                        try { rows.push(JSON.parse(r.dataset.finding)); } catch (e) {}
+                    }
+                });
+            }
+            if (!rows.length) {
+                alert("No visible rows to export. Adjust your filters and try again.");
+                return;
+            }
+            // build a CSV from the finding dicts (stable column order)
+            var cols = ["finding_id", "severity", "scanner_risk", "ml_prediction",
+                        "classifier_confidence", "anomaly_score", "hybrid_score",
+                        "attack_type", "owasp", "cwe", "method", "path", "url",
+                        "alert_name", "confidence", "detection_rule", "correlation_id",
+                        "explanation"];
+            var esc = function (v) {
+                v = (v === null || v === undefined) ? "" : String(v);
+                if (/[",\n]/.test(v)) v = '"' + v.replace(/"/g, '""') + '"';
+                return v;
+            };
+            var lines = [cols.join(",")];
+            rows.forEach(function (r) {
+                lines.push(cols.map(function (c) {
+                    if (c === "path") return esc(r["path"]);
+                    return esc(r[c]);
+                }).join(","));
+            });
+            var csv = lines.join("\n");
+            var blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+            var url = URL.createObjectURL(blob);
+            var a = document.createElement("a");
+            a.href = url;
+            a.download = "owasp_ml_findings_filtered_" + rows.length + "rows.csv";
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        });
+    }
+
+    // =====================================================
+    // ML INSIGHTS: CROSS-TARGET BAR CHART
+    // =====================================================
+    var crossTargetCanvas = document.getElementById("crossTargetChart");
+    var crossTargetPayload = document.getElementById("cross-target-data");
+    if (crossTargetCanvas && crossTargetPayload && window.Chart) {
+        try {
+            var ct = JSON.parse(crossTargetPayload.textContent);
+            var folds = (ct.folds || []).filter(function (f) { return f.accuracy !== null; });
+            if (folds.length) {
+                new Chart(crossTargetCanvas, {
+                    type: "bar",
+                    data: {
+                        labels: folds.map(function (f) { return f.host.length > 18 ? f.host.slice(0, 16) + "…" : f.host; }),
+                        datasets: [
+                            { label: "Accuracy", data: folds.map(function (f) { return f.accuracy; }), backgroundColor: "#22d3ee", borderRadius: 4 },
+                            { label: "Weighted F1", data: folds.map(function (f) { return f.weighted_f1; }), backgroundColor: "#34d399", borderRadius: 4 },
+                            { label: "Macro F1", data: folds.map(function (f) { return f.macro_f1; }), backgroundColor: "#f59e0b", borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: "bottom", labels: { color: "#94a3b8", font: { family: "'JetBrains Mono', monospace", size: 10 }, usePointStyle: true, boxWidth: 8 } },
+                            tooltip: { backgroundColor: "#0D1321", titleColor: "#e2e8f0", bodyColor: "#94a3b8", borderColor: "rgba(34,211,238,0.25)", borderWidth: 1, padding: 10, cornerRadius: 8 }
+                        },
+                        scales: {
+                            x: { grid: { color: "rgba(148,163,184,0.08)" }, ticks: { color: "#64748b", font: { family: "'JetBrains Mono', monospace", size: 10 } } },
+                            y: { beginAtZero: true, max: 1.0, grid: { color: "rgba(148,163,184,0.08)" }, ticks: { color: "#64748b", font: { family: "'JetBrains Mono', monospace", size: 10 }, callback: function (v) { return v.toFixed(2); } } }
+                        }
+                    }
+                });
+            }
+        } catch (e) { console.warn("cross-target chart failed", e); }
+    }
+
+    // =====================================================
+    // DASHBOARD: ATTACK-SURFACE HOST DONUT
+    // =====================================================
+    var hostDonut = document.getElementById("hostDonut");
+    if (hostDonut && data.host_donut && window.Chart) {
+        var hd = data.host_donut;
+        var palette = ["#22d3ee", "#34d399", "#f59e0b", "#f43f5e", "#a78bfa", "#94a3b8", "#475569"];
+        new Chart(hostDonut, {
+            type: "doughnut",
+            data: {
+                labels: hd.labels,
+                datasets: [{
+                    data: hd.values,
+                    backgroundColor: hd.labels.map(function (_, i) { return palette[i % palette.length]; }),
+                    borderColor: "#0D1321", borderWidth: 3, hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: "62%",
+                plugins: {
+                    legend: { position: "right", labels: { color: "#94a3b8", font: { family: "'JetBrains Mono', monospace", size: 9.5 }, boxWidth: 8, padding: 6, usePointStyle: true } },
+                    tooltip: { backgroundColor: "#0D1321", titleColor: "#e2e8f0", bodyColor: "#94a3b8", borderColor: "rgba(34,211,238,0.25)", borderWidth: 1, padding: 9, cornerRadius: 7,
+                        callbacks: { label: function (ctx) { return " " + ctx.label + ": " + ctx.parsed + " findings"; } } }
+                }
+            }
         });
     }
