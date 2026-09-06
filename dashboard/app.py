@@ -396,6 +396,7 @@ def dashboard():
         "attack": {
             "labels": [shorten_label(a) for a in attack_counts.index],
             "values": [int(v) for v in attack_counts.values],
+            "full_labels": [str(a) for a in attack_counts.index],
         },
         "owasp": {
             "labels": [shorten_label(a, 34) for a in owasp_counts.index],

@@ -62,10 +62,22 @@ document.addEventListener("DOMContentLoaded", function () {
         };
     }
 
-    // ---------- Dashboard: risk doughnut ----------
+    // ---------- Dashboard: risk doughnut (clickable -> reports?severity=) ----------
     const riskCanvas = document.getElementById("riskChart");
     if (riskCanvas && data.risk) {
-        new Chart(riskCanvas, {
+        // wrap the canvas in a relative div so we can overlay a center label
+        var riskWrap = document.createElement("div");
+        riskWrap.className = "donut-wrap-rel";
+        riskWrap.style.cssText = "position:relative;flex:1;min-height:260px;";
+        riskCanvas.parentNode.insertBefore(riskWrap, riskCanvas);
+        riskWrap.appendChild(riskCanvas);
+        var riskCenter = document.createElement("div");
+        riskCenter.className = "donut-center";
+        var riskTotal = data.risk.values.reduce(function (a, b) { return a + b; }, 0);
+        riskCenter.innerHTML = '<span class="dc-num">' + riskTotal + '</span><span class="dc-lbl">findings</span>';
+        riskWrap.appendChild(riskCenter);
+
+        var riskChart = new Chart(riskCanvas, {
             type: "doughnut",
             data: {
                 labels: data.risk.labels,
@@ -74,26 +86,54 @@ document.addEventListener("DOMContentLoaded", function () {
                     backgroundColor: data.risk.labels.map(l => SEV_COLORS[l] || "#64748b"),
                     borderColor: "#0D1321",
                     borderWidth: 3,
-                    hoverOffset: 6
+                    hoverOffset: 8
                 }]
             },
             options: {
                 responsive: true, maintainAspectRatio: false, cutout: "62%",
                 plugins: {
                     legend: { position: "bottom", labels: { color: "#94a3b8", font: { family: "'JetBrains Mono', monospace", size: 11 }, padding: 12, usePointStyle: true, pointStyle: "rectRounded" } },
-                    tooltip: { backgroundColor: "#0D1321", titleColor: "#e2e8f0", bodyColor: "#94a3b8", borderColor: "rgba(34,211,238,0.25)", borderWidth: 1, padding: 10, cornerRadius: 8 }
+                    tooltip: {
+                        backgroundColor: "#0D1321", titleColor: "#e2e8f0", bodyColor: "#94a3b8",
+                        borderColor: "rgba(34,211,238,0.25)", borderWidth: 1, padding: 10, cornerRadius: 8,
+                        callbacks: {
+                            label: function (ctx) {
+                                var v = ctx.parsed, pct = riskTotal ? (100 * v / riskTotal).toFixed(1) : 0;
+                                return " " + ctx.label + ": " + v + " (" + pct + "%)";
+                            }
+                        }
+                    }
+                },
+                onClick: function (evt, items) {
+                    if (!items.length) return;
+                    var label = data.risk.labels[items[0].index];
+                    if (label) {
+                        var port = (window.location.search.match(/XTransformPort=(\d+)/) || [])[1];
+                        var ap = port ? "&XTransformPort=" + port : "";
+                        window.location.href = "/reports?severity=" + encodeURIComponent(label) + ap;
+                    }
+                },
+                onHover: function (evt, items) {
+                    riskCanvas.style.cursor = items.length ? "pointer" : "default";
                 }
             }
         });
     }
 
-    // ---------- Dashboard: top attack types ----------
+    // ---------- Dashboard: top attack types (full labels in tooltip) ----------
     const attackCanvas = document.getElementById("attackChart");
     if (attackCanvas && data.attack) {
+        var attackFull = data.attack.full_labels || data.attack.labels;
         new Chart(attackCanvas, {
             type: "bar",
             data: { labels: data.attack.labels, datasets: [{ data: data.attack.values, backgroundColor: CYAN, borderRadius: 5 }] },
-            options: baseBarOptions(true)
+            options: Object.assign({}, baseBarOptions(true), {
+                plugins: Object.assign({}, baseBarOptions(true).plugins, {
+                    tooltip: Object.assign({}, (baseBarOptions(true).plugins || {}).tooltip || {}, {
+                        callbacks: { title: function (ctx) { return attackFull[ctx[0].dataIndex] || ctx[0].label; } }
+                    })
+                })
+            })
         });
     }
 
@@ -923,3 +963,101 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
     }
+
+    // =====================================================
+    // REPORTS: FILTER CHIPS (active filters as removable pills)
+    // =====================================================
+    var filterChipsEl = document.getElementById("filterChips");
+    function renderFilterChips() {
+        if (!filterChipsEl) return;
+        var chips = [];
+        var sb = document.getElementById("reportSearch");
+        var sf = document.getElementById("filterSeverity");
+        var af = document.getElementById("filterAttack");
+        var of = document.getElementById("filterOwasp");
+        if (sb && sb.value.trim()) chips.push({ k: "search", v: sb.value.trim(), clear: function () { sb.value = ""; } });
+        if (sf && sf.value) chips.push({ k: "severity", v: sf.value, clear: function () { sf.value = ""; } });
+        if (af && af.value) chips.push({ k: "attack", v: af.value, clear: function () { af.value = ""; } });
+        if (of && of.value) chips.push({ k: "owasp", v: of.value, clear: function () { of.value = ""; } });
+        filterChipsEl.innerHTML = "";
+        if (!chips.length) return;
+        chips.forEach(function (c) {
+            var chip = document.createElement("span");
+            chip.className = "fchip";
+            chip.innerHTML = '<span class="fchip-k">' + c.k + '</span><span class="fchip-v">' + c.v + '</span><button class="fchip-x" aria-label="remove ' + c.k + ' filter">×</button>';
+            chip.querySelector(".fchip-x").addEventListener("click", function () {
+                c.clear();
+                // trigger the filter
+                if (c.k === "search" && sb) sb.dispatchEvent(new Event("input"));
+                else if (sf) sf.dispatchEvent(new Event("change"));
+                if (af) af.dispatchEvent(new Event("change"));
+                if (of) of.dispatchEvent(new Event("change"));
+            });
+            filterChipsEl.appendChild(chip);
+        });
+    }
+    // re-render chips whenever filters change
+    document.addEventListener("reportFiltersChanged", renderFilterChips);
+    // also render once on load
+    renderFilterChips();
+
+    // =====================================================
+    // REPORTS: COLUMN-TOGGLE localStorage PERSISTENCE
+    // =====================================================
+    var COL_STORE_KEY = "owasp_ml_report_cols";
+    function loadColState() {
+        try {
+            var s = localStorage.getItem(COL_STORE_KEY);
+            return s ? JSON.parse(s) : null;
+        } catch (e) { return null; }
+    }
+    function saveColState(state) {
+        try { localStorage.setItem(COL_STORE_KEY, JSON.stringify(state)); } catch (e) {}
+    }
+    var colMenu = document.getElementById("colToggleMenu");
+    if (colMenu) {
+        var saved = loadColState();
+        if (saved) {
+            colMenu.querySelectorAll("input[data-col]").forEach(function (cb) {
+                var col = cb.getAttribute("data-col");
+                if (saved[col] === false) {
+                    cb.checked = false;
+                    document.querySelectorAll(".col-" + col).forEach(function (cell) {
+                        cell.classList.add("col-hidden");
+                    });
+                }
+            });
+        }
+        // override the earlier change handler with one that also persists
+        colMenu.querySelectorAll("input[data-col]").forEach(function (cb) {
+            cb.addEventListener("change", function () {
+                var col = cb.getAttribute("data-col");
+                var hidden = !cb.checked;
+                document.querySelectorAll(".col-" + col).forEach(function (cell) {
+                    cell.classList.toggle("col-hidden", hidden);
+                });
+                // persist
+                var st = loadColState() || {};
+                st[col] = cb.checked;
+                saveColState(st);
+            });
+        });
+    }
+
+    // =====================================================
+    // ML INSIGHTS: CONFUSION MATRIX CELL CLICK -> drill-down
+    // =====================================================
+    // Cells carry data-actual / data-predicted. Clicking a cell jumps to
+    // /reports and (visually) the user can verify the misclassifications.
+    // We can't filter by both actual+predicted in the reports UI yet, so
+    // we jump to the predicted-severity filter + a search hint.
+    document.querySelectorAll(".cm-cell[data-actual]").forEach(function (cell) {
+        cell.style.cursor = "pointer";
+        cell.title = "click to inspect findings predicted as " + cell.dataset.predicted;
+        cell.addEventListener("click", function () {
+            var pred = cell.dataset.predicted;
+            var port = (window.location.search.match(/XTransformPort=(\d+)/) || [])[1];
+            var ap = port ? "&XTransformPort=" + port : "";
+            window.location.href = "/reports?severity=" + encodeURIComponent(pred) + ap;
+        });
+    });

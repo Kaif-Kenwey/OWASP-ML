@@ -935,3 +935,36 @@ code, .code {
     .as-flex { flex-direction: column; }
     .as-donut-wrap { flex: 1; width: 100%; }
 }
+
+/* =====================================================
+   FILTER CHIPS (active filter pills with remove buttons)
+   ===================================================== */
+.filter-chips {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 2px 0;
+    min-height: 0;
+}
+.filter-chips:empty { display: none; }
+.fchip {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 6px 4px 11px; border-radius: 999px;
+    background: var(--cyan-soft); border: 1px solid rgba(34,211,238,0.3);
+    font-family: var(--mono); font-size: 10.5px; color: var(--cyan);
+}
+.fchip .fchip-k { color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.5px; font-size: 9.5px; }
+.fchip .fchip-v { color: var(--ink); font-weight: 600; }
+.fchip .fchip-x {
+    background: transparent; border: none; color: var(--ink-faint); cursor: pointer;
+    padding: 0 4px; font-size: 14px; line-height: 1; border-radius: 50%;
+    transition: color 0.12s ease, background 0.12s ease;
+}
+.fchip .fchip-x:hover { color: var(--critical); background: rgba(244,63,94,0.12); }
+
+/* donut center label */
+.donut-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; pointer-events: none;
+    text-align: center;
+}
+.donut-center .dc-num { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--ink); line-height: 1; }
+.donut-center .dc-lbl { font-family: var(--mono); font-size: 9px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.donut-wrap-rel { position: relative; }

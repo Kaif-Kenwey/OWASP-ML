@@ -122,6 +122,9 @@
                         {% set frac = (val / row_max) if row_max else 0 %}
                         {% set alpha = frac if frac > 0.12 else (0.12 if val else 0) %}
                         <td class="cm-cell {% if outer.index0 == loop.index0 %}cm-diag{% endif %}"
+                            data-actual="{{ cm_labels[outer.index0] }}"
+                            data-predicted="{{ cm_labels[loop.index0] }}"
+                            title="{{ val }} finding(s): actual {{ cm_labels[outer.index0] }}, predicted {{ cm_labels[loop.index0] }} — click to inspect"
                             style="background: rgba({{ '52,211,153' if outer.index0 == loop.index0 else '239,68,68' }}, {{ alpha }}); border-color: rgba({{ '52,211,153' if outer.index0 == loop.index0 else '239,68,68' }}, {{ (alpha + 0.2) | round(2) }});">
                             {{ val }}
                         </td>
