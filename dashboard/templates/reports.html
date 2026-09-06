@@ -49,11 +49,11 @@
     <span class="toolbar-note" id="rowNote">showing {{ shown }} of {{ total }}</span>
 </div>
 
-{% if pre_rule %}
+{% if pre_label %}
 <div class="banner banner-info" style="margin-bottom:0;">
-    <strong>Filtered by detection rule: {{ pre_rule }}.</strong>
-    Showing only findings where this rule fired.
-    <a href="/reports{{ qp }}" style="color:inherit; text-decoration:underline; margin-left:6px;">clear rule filter →</a>
+    <strong>Filtered by {{ pre_label }}.</strong>
+    Showing only matching findings.
+    <a href="/reports{{ qp }}" style="color:inherit; text-decoration:underline; margin-left:6px;">clear filter →</a>
 </div>
 {% endif %}
 

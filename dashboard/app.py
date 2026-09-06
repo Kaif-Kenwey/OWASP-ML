@@ -391,8 +391,9 @@ def dashboard():
             "values": [int(v) for v in attack_counts.values],
         },
         "owasp": {
-            "labels": [shorten_label(a) for a in owasp_counts.index],
+            "labels": [shorten_label(a, 34) for a in owasp_counts.index],
             "values": [int(v) for v in owasp_counts.values],
+            "full_labels": [str(a) for a in owasp_counts.index],
         },
         "method": {
             "labels": [shorten_label(a) for a in method_counts.index],
@@ -423,6 +424,7 @@ def dashboard():
         correlation_events=_correlation_events(corr_df),
         top_urls=top_urls,
         chart_data=to_json(chart_data),
+        owasp_descriptions={k: v for k, v in ATTACK_TO_OWASP.items()},
         rule_list=[{"rule_id": r.rule_id, "name": r.name, "severity": r.severity,
                     "description": r.description, "recommended_action": r.recommended_action}
                    for r in RULES],
@@ -541,6 +543,21 @@ def reports():
     if pre_rule and pre_rule.startswith("RULE-"):
         rows = [r for r in rows if pre_rule in (safe_str(r.get("detection_rule"), ""))]
 
+    # ?attack=SQL+Injection -> pre-filter by attack family (matrix-jump).
+    pre_attack = safe_str(request.args.get("attack"), "")
+    if pre_attack:
+        rows = [r for r in rows if safe_str(r.get("attack_type"), "") == pre_attack]
+
+    # ?severity=High -> pre-filter by severity (KPI-jump).
+    pre_sev = safe_str(request.args.get("severity"), "")
+    if pre_sev:
+        rows = [r for r in rows if safe_risk(r.get("severity")) == safe_risk(pre_sev)]
+
+    pre_label = ""
+    if pre_rule: pre_label = f"detection rule {pre_rule}"
+    elif pre_attack: pre_label = f"attack type: {pre_attack}"
+    elif pre_sev: pre_label = f"severity: {safe_risk(pre_sev)}"
+
     return render_template(
         "reports.html",
         has_data=True,
@@ -550,6 +567,9 @@ def reports():
         attack_types=attack_types,
         owasp_categories=owasp_categories,
         pre_rule=pre_rule,
+        pre_attack=pre_attack,
+        pre_sev=safe_risk(pre_sev) if pre_sev else "",
+        pre_label=pre_label,
     )
 
 
@@ -617,6 +637,80 @@ def download_report():
     if not os.path.exists(REPORT_PATH):
         return redirect(url_for("reports"))
     return send_file(REPORT_PATH, as_attachment=True, download_name="threat_report.csv")
+
+
+# ===============================
+# RE-RUN DEMO PIPELINE (demo-only, no ZAP, no keys)
+# ===============================
+import threading as _threading
+
+_rerun_state = {"running": False, "started_at": None, "finished_at": None,
+                "status": "idle", "log": [], "returncode": None}
+
+
+def _run_demo_pipeline_background():
+    """Run `python run_pipeline.py --demo` in a background thread.
+
+    Demo mode is fully offline (bundled sample scan, no ZAP, no API keys),
+    so this is safe to expose on the dashboard. Real-scan mode is NEVER
+    triggered from the UI -- it requires explicit CLI consent.
+    """
+    import time, subprocess, sys as _sys
+    _rerun_state["running"] = True
+    _rerun_state["started_at"] = time.time()
+    _rerun_state["finished_at"] = None
+    _rerun_state["status"] = "running"
+    _rerun_state["log"] = []
+    _rerun_state["returncode"] = None
+    try:
+        proc = subprocess.Popen(
+            [_sys.executable, "run_pipeline.py", "--demo"],
+            cwd=BASE_DIR, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+            text=True, bufsize=1,
+        )
+        for line in proc.stdout:
+            line = line.rstrip()
+            if line:
+                _rerun_state["log"].append(line)
+        proc.wait()
+        _rerun_state["returncode"] = proc.returncode
+        _rerun_state["status"] = "ok" if proc.returncode == 0 else "error"
+    except Exception as exc:
+        _rerun_state["log"].append(f"[dashboard] rerun failed: {exc}")
+        _rerun_state["status"] = "error"
+        _rerun_state["returncode"] = -1
+    finally:
+        _rerun_state["finished_at"] = time.time()
+        _rerun_state["running"] = False
+
+
+@app.route("/api/rerun", methods=["POST"])
+def api_rerun_start():
+    """Start a demo-pipeline re-run. Refuses if one is already running, and
+    NEVER accepts a target URL -- real scans need CLI consent (see scanner/zap_scan.py).
+    """
+    if _rerun_state["running"]:
+        return jsonify({"ok": False, "error": "a re-run is already in progress"}), 409
+    # reset
+    _rerun_state.update(running=True, started_at=None, finished_at=None,
+                        status="running", log=[], returncode=None)
+    t = _threading.Thread(target=_run_demo_pipeline_background, daemon=True)
+    t.start()
+    return jsonify({"ok": True, "status": "started"})
+
+
+@app.route("/api/rerun/status")
+def api_rerun_status():
+    """Poll the re-run progress. The dashboard polls this every ~1.2s."""
+    return jsonify({
+        "running": _rerun_state["running"],
+        "status": _rerun_state["status"],
+        "returncode": _rerun_state["returncode"],
+        "lines": _rerun_state["log"][-60:],   # tail, keep payload small
+        "total_lines": len(_rerun_state["log"]),
+        "started_at": _rerun_state["started_at"],
+        "finished_at": _rerun_state["finished_at"],
+    })
 
 
 if __name__ == "__main__":

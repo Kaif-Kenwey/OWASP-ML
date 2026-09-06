@@ -97,13 +97,20 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // ---------- Dashboard: OWASP categories ----------
+    // ---------- Dashboard: OWASP categories (full labels in tooltip) ----------
     const owaspCanvas = document.getElementById("owaspChart");
     if (owaspCanvas && data.owasp) {
+        var owaspFull = data.owasp.full_labels || data.owasp.labels;
         new Chart(owaspCanvas, {
             type: "bar",
             data: { labels: data.owasp.labels, datasets: [{ data: data.owasp.values, backgroundColor: GREEN, borderRadius: 5 }] },
-            options: baseBarOptions(true)
+            options: Object.assign({}, baseBarOptions(true), {
+                plugins: Object.assign({}, baseBarOptions(true).plugins, {
+                    tooltip: Object.assign({}, (baseBarOptions(true).plugins || {}).tooltip || {}, {
+                        callbacks: { title: function (ctx) { return owaspFull[ctx[0].dataIndex] || ctx[0].label; } }
+                    })
+                })
+            })
         });
     }
 
@@ -405,3 +412,280 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
+    // =====================================================
+    // KPI COUNT-UP ANIMATION
+    // =====================================================
+    document.querySelectorAll(".kpi-count[data-count]").forEach(function (el) {
+        var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+        if (target === 0) { el.textContent = "0"; return; }
+        var start = 0, dur = 900, t0 = null;
+        function tick(ts) {
+            if (!t0) t0 = ts;
+            var p = Math.min((ts - t0) / dur, 1);
+            // easeOutCubic
+            var eased = 1 - Math.pow(1 - p, 3);
+            el.textContent = Math.round(start + (target - start) * eased).toString();
+            if (p < 1) requestAnimationFrame(tick);
+            else el.textContent = target.toString();
+        }
+        requestAnimationFrame(tick);
+    });
+
+    // =====================================================
+    // ATTACK MATRIX CELL -> jump to filtered reports
+    // =====================================================
+    document.querySelectorAll(".matrix-cell[data-href]").forEach(function (cell) {
+        cell.addEventListener("click", function () {
+            window.location.href = cell.getAttribute("data-href");
+        });
+    });
+
+    // =====================================================
+    // STYLED TOOLTIP (replaces browser title for data-tip elements)
+    // =====================================================
+    var tip = document.getElementById("styledTip");
+    if (tip) {
+        function showTip(e, text) {
+            tip.textContent = text;
+            tip.classList.add("show");
+            var r = e.target.getBoundingClientRect();
+            var x = r.left + 10, y = r.bottom + 8;
+            if (x + 340 > window.innerWidth) x = window.innerWidth - 350;
+            tip.style.left = x + "px"; tip.style.top = y + "px";
+        }
+        function hideTip() { tip.classList.remove("show"); }
+        document.addEventListener("mouseover", function (e) {
+            var t = e.target.closest("[title]");
+            if (!t) return;
+            var txt = t.getAttribute("title");
+            if (!txt) return;
+            // hide the native title tooltip by stashing + clearing it
+            t.dataset.tip = txt;
+            showTip(e, txt);
+        });
+        document.addEventListener("mouseout", function (e) {
+            var t = e.target.closest("[data-tip]");
+            if (t && t.dataset.tip) { hideTip(); }
+        });
+    }
+
+    // =====================================================
+    // RE-RUN PIPELINE MODAL
+    // =====================================================
+    var rerunBtn = document.getElementById("rerunBtn");
+    var rerunBackdrop = document.getElementById("rerunBackdrop");
+    var rerunClose = document.getElementById("rerunClose");
+    var rerunCancel = document.getElementById("rerunCancel");
+    var rerunConfirm = document.getElementById("rerunConfirm");
+    var rerunLog = document.getElementById("rerunLog");
+    var rerunPoll = null;
+
+    function openRerun() {
+        if (!rerunBackdrop) return;
+        rerunBackdrop.classList.add("open");
+        // poll current status in case a run is already going
+        pollRerun();
+    }
+    function closeRerun() {
+        if (!rerunBackdrop) return;
+        rerunBackdrop.classList.remove("open");
+        if (rerunPoll) { clearInterval(rerunPoll); rerunPoll = null; }
+    }
+    function appendLine(text, cls) {
+        if (!rerunLog) return;
+        var line = document.createElement("div");
+        line.className = "rerun-line " + (cls || "");
+        var mark = document.createElement("span"); mark.className = "mark"; mark.textContent = "›";
+        var txt = document.createElement("span"); txt.textContent = text;
+        line.appendChild(mark); line.appendChild(txt);
+        rerunLog.appendChild(line);
+        rerunLog.scrollTop = rerunLog.scrollHeight;
+    }
+    function gatewayPort() {
+        var m = window.location.search.match(/XTransformPort=(\d+)/);
+        return m ? m[1] : null;
+    }
+    function withGateway(path) {
+        var p = gatewayPort();
+        return path + (p ? (path.indexOf("?") !== -1 ? "&" : "?") + "XTransformPort=" + p : "");
+    }
+    function pollRerun() {
+        if (rerunPoll) clearInterval(rerunPoll);
+        rerunPoll = setInterval(function () {
+            fetch(withGateway("/api/rerun/status")).then(function (r) { return r.json(); }).then(function (d) {
+                if (!d) return;
+                if (rerunLog) rerunLog.innerHTML = "";
+                (d.lines || []).forEach(function (l) {
+                    var cls = "ok";
+                    if (/\bFAILED|error|Traceback\b/i.test(l)) cls = "err";
+                    else if (/^\[\d\/\d\]|====|PIPELINE COMPLETE/.test(l)) cls = "ok";
+                    else if (/Running|Hybrid|Training|Spider/i.test(l)) cls = "active";
+                    appendLine(l, cls);
+                });
+                if (!d.running) {
+                    if (rerunPoll) { clearInterval(rerunPoll); rerunPoll = null; }
+                    if (rerunConfirm) { rerunConfirm.disabled = false; rerunConfirm.textContent = "Run demo pipeline"; }
+                    if (d.status === "ok") {
+                        appendLine("✓ pipeline complete — reloading dashboard…", "done");
+                        setTimeout(function () { window.location.href = withGateway("/"); }, 1200);
+                    } else if (d.status === "error") {
+                        appendLine("✗ pipeline failed — see log above", "err");
+                    }
+                } else {
+                    if (rerunConfirm) { rerunConfirm.disabled = true; rerunConfirm.textContent = "Running…"; }
+                }
+            }).catch(function () {});
+        }, 1200);
+    }
+    if (rerunBtn) rerunBtn.addEventListener("click", openRerun);
+    if (rerunClose) rerunClose.addEventListener("click", closeRerun);
+    if (rerunCancel) rerunCancel.addEventListener("click", closeRerun);
+    if (rerunBackdrop) rerunBackdrop.addEventListener("click", function (e) { if (e.target === rerunBackdrop) closeRerun(); });
+    if (rerunConfirm) rerunConfirm.addEventListener("click", function () {
+        rerunConfirm.disabled = true; rerunConfirm.textContent = "Starting…";
+        if (rerunLog) rerunLog.innerHTML = "";
+        appendLine("starting demo pipeline…", "active");
+        fetch(withGateway("/api/rerun"), { method: "POST" })
+            .then(function (r) { return r.json(); })
+            .then(function (d) {
+                if (!d.ok) { appendLine("✗ " + (d.error || "could not start"), "err"); rerunConfirm.disabled = false; rerunConfirm.textContent = "Run demo pipeline"; return; }
+                pollRerun();
+            }).catch(function (e) {
+                appendLine("✗ request failed: " + e, "err");
+                rerunConfirm.disabled = false; rerunConfirm.textContent = "Run demo pipeline";
+            });
+    });
+
+    // =====================================================
+    // COMMAND PALETTE (Ctrl/Cmd+K)
+    // =====================================================
+    var cmdkTrigger = document.getElementById("cmdkTrigger");
+    var cmdkBackdrop = document.getElementById("cmdkBackdrop");
+    var cmdkInput = document.getElementById("cmdkInput");
+    var cmdkList = document.getElementById("cmdkList");
+    var cmdkActive = 0;
+
+    function cmdkItems() {
+        var qp = gatewayPort();
+        var ap = qp ? "&XTransformPort=" + qp : "";
+        var qpOnly = qp ? "?XTransformPort=" + qp : "";
+        var items = [
+            { label: "Command Center", hint: "dashboard", href: "/" + qpOnly, ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3' y='3' width='7' height='9'/><rect x='14' y='3' width='7' height='5'/><rect x='14' y='12' width='7' height='9'/><rect x='3' y='16' width='7' height='5'/></svg>" },
+            { label: "ML Insights", hint: "model eval", href: "/ml-insights" + qpOnly, ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M3 3v18h18'/><path d='M7 14l4-4 3 3 5-6'/></svg>" },
+            { label: "Findings", hint: "all findings", href: "/reports" + qpOnly, ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6'/></svg>" },
+            { label: "Critical findings", hint: "severity", href: "/reports?severity=Critical" + ap, ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 2 L20 5 V11 C20 16.5 16.7 20.6 12 22 C7.3 20.6 4 16.5 4 11 V5 Z'/></svg>" },
+            { label: "High findings", hint: "severity", href: "/reports?severity=High" + ap, ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M12 2 L20 5 V11 C20 16.5 16.7 20.6 12 22 C7.3 20.6 4 16.5 4 11 V5 Z'/></svg>" },
+            { label: "SQL Injection findings", hint: "attack", href: "/reports?attack=SQL+Injection" + ap, ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><ellipse cx='12' cy='6' rx='8' ry='3'/><path d='M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6'/></svg>" },
+        ];
+        // add detection rules from the page payload
+        var payload = document.getElementById("cmdk-data");
+        if (payload) {
+            try {
+                var d = JSON.parse(payload.textContent);
+                (d.rules || []).forEach(function (r) {
+                    items.push({
+                        label: r.name + " (" + r.rule_id + ")",
+                        hint: "detection · " + r.severity,
+                        href: r.href,
+                        ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M9 11l3 3 8-8'/><path d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/></svg>",
+                    });
+                });
+            } catch (e) {}
+        }
+        // top vulnerable endpoints
+        document.querySelectorAll(".url-item").forEach(function (li) {
+            var url = li.getAttribute("title") || li.querySelector(".url-path") && li.querySelector(".url-path").getAttribute("title");
+            if (url) items.push({
+                label: "Endpoint: " + (li.querySelector(".url-path") ? li.querySelector(".url-path").textContent : url),
+                hint: "top vulnerable",
+                href: "#",
+                ico: "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1'/><path d='M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1'/></svg>",
+            });
+        });
+        return items;
+    }
+
+    function renderCmdk(q) {
+        if (!cmdkList) return;
+        var items = cmdkItems();
+        q = (q || "").toLowerCase().trim();
+        var filtered = !q ? items : items.filter(function (it) {
+            return (it.label + " " + it.hint).toLowerCase().indexOf(q) !== -1;
+        });
+        cmdkActive = 0;
+        cmdkList.innerHTML = "";
+        if (!filtered.length) {
+            var empty = document.createElement("li");
+            empty.className = "cmdk-empty";
+            empty.textContent = "No matches";
+            cmdkList.appendChild(empty);
+            return;
+        }
+        filtered.slice(0, 8).forEach(function (it, i) {
+            var li = document.createElement("li");
+            li.className = "cmdk-item" + (i === 0 ? " active" : "");
+            li.innerHTML = '<span class="cm-ico">' + it.ico + '</span>' +
+                '<span class="cm-label">' + it.label + '</span>' +
+                '<span class="cm-hint">' + it.hint + '</span>';
+            li.addEventListener("click", function () { if (it.href && it.href !== "#") window.location.href = it.href; closeCmdk(); });
+            li.addEventListener("mouseenter", function () {
+                cmdkActive = i;
+                Array.prototype.forEach.call(cmdkList.querySelectorAll(".cmdk-item"), function (el, idx) {
+                    el.classList.toggle("active", idx === cmdkActive);
+                });
+            });
+            cmdkList.appendChild(li);
+        });
+        cmdkList._items = filtered;
+    }
+    function openCmdk() {
+        if (!cmdkBackdrop) return;
+        cmdkBackdrop.classList.add("open");
+        if (cmdkInput) { cmdkInput.value = ""; setTimeout(function () { cmdkInput.focus(); }, 50); }
+        renderCmdk("");
+    }
+    function closeCmdk() {
+        if (!cmdkBackdrop) return;
+        cmdkBackdrop.classList.remove("open");
+    }
+    if (cmdkTrigger) cmdkTrigger.addEventListener("click", openCmdk);
+    if (cmdkBackdrop) cmdkBackdrop.addEventListener("click", function (e) { if (e.target === cmdkBackdrop) closeCmdk(); });
+    if (cmdkInput) {
+        cmdkInput.addEventListener("input", function () { renderCmdk(cmdkInput.value); });
+    }
+    // global Ctrl/Cmd+K + Esc handling
+    document.addEventListener("keydown", function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+            e.preventDefault();
+            if (cmdkBackdrop && cmdkBackdrop.classList.contains("open")) closeCmdk(); else openCmdk();
+            return;
+        }
+        if (e.key === "Escape") {
+            if (cmdkBackdrop && cmdkBackdrop.classList.contains("open")) { closeCmdk(); return; }
+            if (rerunBackdrop && rerunBackdrop.classList.contains("open")) { closeRerun(); return; }
+        }
+        if (cmdkBackdrop && cmdkBackdrop.classList.contains("open")) {
+            var items = cmdkList && cmdkList._items || [];
+            if (e.key === "ArrowDown") {
+                e.preventDefault();
+                cmdkActive = Math.min(cmdkActive + 1, items.length - 1);
+                updateCmdkActive();
+            } else if (e.key === "ArrowUp") {
+                e.preventDefault();
+                cmdkActive = Math.max(cmdkActive - 1, 0);
+                updateCmdkActive();
+            } else if (e.key === "Enter") {
+                e.preventDefault();
+                var it = items[cmdkActive];
+                if (it && it.href && it.href !== "#") window.location.href = it.href;
+                closeCmdk();
+            }
+        }
+    });
+    function updateCmdkActive() {
+        if (!cmdkList) return;
+        Array.prototype.forEach.call(cmdkList.querySelectorAll(".cmdk-item"), function (el, idx) {
+            el.classList.toggle("active", idx === cmdkActive);
+        });
+    }

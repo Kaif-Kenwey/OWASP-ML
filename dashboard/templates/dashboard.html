@@ -59,31 +59,31 @@
 
 <!-- ================= KPI ROW ================= -->
 <div class="kpi-row">
-    <div class="kpi kpi-critical">
+    <a class="kpi kpi-critical" href="/reports?severity=Critical{{ ap }}">
         <div class="kpi-top"><span class="kpi-label">Critical</span><span class="kpi-ico">⚠</span></div>
-        <span class="kpi-count">{{ counts.Critical }}</span>
+        <span class="kpi-count" data-count="{{ counts.Critical }}">0</span>
         <span class="kpi-pct">{{ percentages.Critical }}% of findings</span>
-    </div>
-    <div class="kpi kpi-high">
+    </a>
+    <a class="kpi kpi-high" href="/reports?severity=High{{ ap }}">
         <div class="kpi-top"><span class="kpi-label">High</span><span class="kpi-ico">!</span></div>
-        <span class="kpi-count">{{ counts.High }}</span>
+        <span class="kpi-count" data-count="{{ counts.High }}">0</span>
         <span class="kpi-pct">{{ percentages.High }}% of findings</span>
-    </div>
-    <div class="kpi kpi-medium">
+    </a>
+    <a class="kpi kpi-medium" href="/reports?severity=Medium{{ ap }}">
         <div class="kpi-top"><span class="kpi-label">Medium</span><span class="kpi-ico">▲</span></div>
-        <span class="kpi-count">{{ counts.Medium }}</span>
+        <span class="kpi-count" data-count="{{ counts.Medium }}">0</span>
         <span class="kpi-pct">{{ percentages.Medium }}% of findings</span>
-    </div>
-    <div class="kpi kpi-low">
+    </a>
+    <a class="kpi kpi-low" href="/reports?severity=Low{{ ap }}">
         <div class="kpi-top"><span class="kpi-label">Low</span><span class="kpi-ico">●</span></div>
-        <span class="kpi-count">{{ counts.Low }}</span>
+        <span class="kpi-count" data-count="{{ counts.Low }}">0</span>
         <span class="kpi-pct">{{ percentages.Low }}% of findings</span>
-    </div>
-    <div class="kpi kpi-info">
+    </a>
+    <a class="kpi kpi-info" href="/reports?severity=Informational{{ ap }}">
         <div class="kpi-top"><span class="kpi-label">Informational</span><span class="kpi-ico">i</span></div>
-        <span class="kpi-count">{{ counts.Informational }}</span>
+        <span class="kpi-count" data-count="{{ counts.Informational }}">0</span>
         <span class="kpi-pct">{{ percentages.Informational }}% of findings</span>
-    </div>
+    </a>
 </div>
 
 <!-- ================= ATTACK SURFACE SUMMARY ================= -->
@@ -196,7 +196,7 @@
 
 <!-- ================= ATTACK MATRIX ================= -->
 <div class="card">
-    <div class="card-head"><h2>Attack Matrix — Attack Type × Risk</h2><span class="muted small">heatmap intensity = finding count</span></div>
+    <div class="card-head"><h2>Attack Matrix — Attack Type × Risk</h2><span class="muted small">click a cell to filter findings · hover for count</span></div>
     {% if attack_matrix.rows %}
     <div class="table-wrap">
         <table class="matrix-table">
@@ -210,12 +210,18 @@
             <tbody>
                 {% for row in attack_matrix.rows %}
                 <tr>
-                    <th class="row-label">{{ row.attack }}</th>
+                    <th class="row-label" title="click to filter by {{ row.attack }}">{{ row.attack }}</th>
                     {% for c in attack_matrix.cols %}
                         {% set v = row.values[loop.index0] %}
-                        <td class="matrix-cell {% if v == 0 %}empty{% endif %}" {% if v != 0 %}data-sev="{{ c }}"{% endif %}>{{ v }}</td>
+                        {% if v == 0 %}
+                        <td class="matrix-cell empty" title="no {{ row.attack }} at {{ c }}">0</td>
+                        {% else %}
+                        <td class="matrix-cell" data-sev="{{ c }}"
+                            title="{{ v }} × {{ row.attack }} ({{ c }})"
+                            data-href="/reports?attack={{ row.attack | urlencode }}&severity={{ c }}{{ ap }}">{{ v }}</td>
+                        {% endif %}
                     {% endfor %}
-                    <td class="matrix-cell empty">{{ row.total }}</td>
+                    <td class="matrix-cell empty" title="{{ row.total }} total {{ row.attack }}">{{ row.total }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -296,6 +302,14 @@
 
 <!-- Chart payloads rendered by app.py, consumed by dashboard.js -->
 <script type="application/json" id="chart-data">{{ chart_data | safe }}</script>
+<!-- Command palette + tooltip data (rules + owasp descriptions) -->
+<script type="application/json" id="cmdk-data">{
+  "rules": [
+    {% for r in rule_list %}
+    {"rule_id": "{{ r.rule_id }}", "name": "{{ r.name }}", "severity": "{{ r.severity }}", "href": "/reports?rule={{ r.rule_id }}{{ ap }}"}{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+}</script>
 
 {% endif %}
 
