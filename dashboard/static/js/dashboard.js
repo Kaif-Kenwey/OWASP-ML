@@ -326,11 +326,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
     if (reportBody) applyReportFilters();
 
-    // ---------- sortable columns ----------
+    // ---------- sortable columns (with localStorage persistence) ----------
     const table = document.getElementById("reportTable");
     if (table) {
         const headers = table.querySelectorAll("th.sortable");
-        let sortState = { col: null, dir: 1 };
+        // restore persisted sort
+        let savedSort = null;
+        try { savedSort = JSON.parse(localStorage.getItem("owasp_ml_sort") || "null"); } catch (e) {}
+        let sortState = savedSort || { col: null, dir: 1 };
         // map data-sort value -> the row data attribute that holds the sort key
         const colToAttr = {
             "severity": "severityRank",
@@ -344,32 +347,49 @@ document.addEventListener("DOMContentLoaded", function () {
             "anomaly_score": "sortAnomaly",
             "hybrid_score": "sortHybrid",
         };
+        function persistSort() {
+            try { localStorage.setItem("owasp_ml_sort", JSON.stringify(sortState)); } catch (e) {}
+        }
+        function runSort(col, dir) {
+            sortState.col = col; sortState.dir = dir;
+            headers.forEach(function (h) {
+                var a = h.querySelector(".arrow"); if (a) a.textContent = "";
+            });
+            var activeTh = Array.prototype.find.call(headers, function (h) { return h.dataset.sort === col; });
+            if (activeTh) {
+                var a = activeTh.querySelector(".arrow");
+                if (a) a.textContent = dir > 0 ? "▲" : "▼";
+            }
+            const attr = colToAttr[col] || col;
+            const rows = Array.from(reportBody.querySelectorAll("tr"));
+            rows.sort(function (a, b) {
+                let av = a.dataset[attr] || "";
+                let bv = b.dataset[attr] || "";
+                if (col === "anomaly_score" || col === "hybrid_score" || col === "cwe" ||
+                    col === "severity" || col === "ml_prediction") {
+                    av = parseFloat(av) || 0; bv = parseFloat(bv) || 0;
+                } else {
+                    av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
+                }
+                if (av < bv) return -1 * sortState.dir;
+                if (av > bv) return 1 * sortState.dir;
+                return 0;
+            });
+            rows.forEach(r => reportBody.appendChild(r));
+            applyReportFilters();
+            persistSort();
+        }
+        // restore visual indicator on load
+        if (savedSort && savedSort.col) {
+            var a = Array.prototype.find.call(headers, function (h) { return h.dataset.sort === savedSort.col; });
+            if (a) { var arr = a.querySelector(".arrow"); if (arr) arr.textContent = savedSort.dir > 0 ? "▲" : "▼"; }
+        }
         headers.forEach(function (th) {
             th.addEventListener("click", function () {
                 const col = th.dataset.sort;
                 if (sortState.col === col) sortState.dir = -sortState.dir;
                 else { sortState.col = col; sortState.dir = 1; }
-                headers.forEach(h => h.querySelector(".arrow").textContent = "");
-                th.querySelector(".arrow").textContent = sortState.dir > 0 ? "▲" : "▼";
-
-                const attr = colToAttr[col] || col;
-                const rows = Array.from(reportBody.querySelectorAll("tr"));
-                rows.sort(function (a, b) {
-                    let av = a.dataset[attr] || "";
-                    let bv = b.dataset[attr] || "";
-                    // numeric for the score columns
-                    if (col === "anomaly_score" || col === "hybrid_score" || col === "cwe" ||
-                        col === "severity" || col === "ml_prediction") {
-                        av = parseFloat(av) || 0; bv = parseFloat(bv) || 0;
-                    } else {
-                        av = String(av).toLowerCase(); bv = String(bv).toLowerCase();
-                    }
-                    if (av < bv) return -1 * sortState.dir;
-                    if (av > bv) return 1 * sortState.dir;
-                    return 0;
-                });
-                rows.forEach(r => reportBody.appendChild(r));
-                applyReportFilters();
+                runSort(sortState.col, sortState.dir);
             });
         });
     }
@@ -1339,4 +1359,141 @@ document.addEventListener("DOMContentLoaded", function () {
                 rows.forEach(function (r) { tbody.appendChild(r); });
             });
         });
+    }
+
+    // =====================================================
+    // KEYBOARD SHORTCUTS HELP OVERLAY + g-d/g-m/g-f NAVIGATION
+    // =====================================================
+    var shortcutsBtn = document.getElementById("shortcutsBtn");
+    var shortcutsBackdrop = document.getElementById("shortcutsBackdrop");
+    var shortcutsClose = document.getElementById("shortcutsClose");
+    function openShortcuts() { if (shortcutsBackdrop) shortcutsBackdrop.classList.add("open"); }
+    function closeShortcuts() { if (shortcutsBackdrop) shortcutsBackdrop.classList.remove("open"); }
+    if (shortcutsBtn) shortcutsBtn.addEventListener("click", openShortcuts);
+    if (shortcutsClose) shortcutsClose.addEventListener("click", closeShortcuts);
+    if (shortcutsBackdrop) shortcutsBackdrop.addEventListener("click", function (e) {
+        if (e.target === shortcutsBackdrop) closeShortcuts();
+    });
+
+    // g-then-d/m/f navigation (vim-style)
+    var gPending = false, gTimer = null;
+    function navTo(path) {
+        var port = (window.location.search.match(/XTransformPort=(\d+)/) || [])[1];
+        var qp = port ? "?" + "XTransformPort=" + port : "";
+        window.location.href = path + qp;
+    }
+    document.addEventListener("keydown", function (e) {
+        // ignore when typing in a field
+        var tag = document.activeElement.tagName;
+        if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA") return;
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") return; // handled by cmdk
+        if (e.key === "?" && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+            if (shortcutsBackdrop && shortcutsBackdrop.classList.contains("open")) closeShortcuts();
+            else openShortcuts();
+            return;
+        }
+        if (e.key === "Escape") {
+            if (shortcutsBackdrop && shortcutsBackdrop.classList.contains("open")) { closeShortcuts(); return; }
+        }
+        // g-then-X navigation
+        if (e.key.toLowerCase() === "g" && !e.ctrlKey && !e.metaKey) {
+            if (gPending) return;
+            gPending = true;
+            clearTimeout(gTimer);
+            gTimer = setTimeout(function () { gPending = false; }, 800);
+            return;
+        }
+        if (gPending) {
+            gPending = false;
+            clearTimeout(gTimer);
+            var k = e.key.toLowerCase();
+            if (k === "d") { e.preventDefault(); navTo("/"); }
+            else if (k === "m") { e.preventDefault(); navTo("/ml-insights"); }
+            else if (k === "f") { e.preventDefault(); navTo("/reports"); }
+        }
+    });
+
+    // =====================================================
+    // REPORTS: COPY-FINDING-ID BUTTON (in the drawer header)
+    // =====================================================
+    // The drawer is built dynamically by openDrawer; we expose a copy helper
+    // and add a copy button to the drawer sub on open.
+    var origOpenDrawer = window._openFindingDrawer;
+    if (typeof origOpenDrawer === "function") {
+        window._openFindingDrawer = function (row) {
+            origOpenDrawer(row);
+            var sub = document.getElementById("drawerSub");
+            if (sub && !sub.querySelector(".copy-id-btn")) {
+                var btn = document.createElement("button");
+                btn.className = "copy-id-btn"; btn.textContent = "⧉ copy ID";
+                btn.style.cssText = "margin-left:8px;background:var(--panel-3);border:1px solid var(--line);color:var(--cyan);font-family:var(--mono);font-size:10px;padding:2px 8px;border-radius:5px;cursor:pointer;";
+                btn.addEventListener("click", function () {
+                    var fid = sub.dataset.fid || "";
+                    if (!fid) return;
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(fid).then(function () {
+                            btn.textContent = "✓ copied"; setTimeout(function () { btn.textContent = "⧉ copy ID"; }, 1200);
+                        });
+                    } else {
+                        var ta = document.createElement("textarea"); ta.value = fid; document.body.appendChild(ta); ta.select();
+                        try { document.execCommand("copy"); btn.textContent = "✓ copied"; setTimeout(function () { btn.textContent = "⧉ copy ID"; }, 1200); } catch (e2) {}
+                        document.body.removeChild(ta);
+                    }
+                });
+                sub.appendChild(btn);
+            }
+            // store the finding_id on the sub for the copy button
+            try {
+                var f = JSON.parse(row.dataset.finding || "{}");
+                if (sub) sub.dataset.fid = f.finding_id || "";
+            } catch (e) {}
+        };
+    }
+
+    // =====================================================
+    // ML INSIGHTS: CONFUSION MATRIX NORMALIZED/RAW TOGGLE
+    // =====================================================
+    var cmTable = document.querySelector(".cm-table");
+    if (cmTable) {
+        // add a toggle button in the card head
+        var cmCard = cmTable.closest(".card");
+        if (cmCard) {
+            var cmHead = cmCard.querySelector(".card-head");
+            if (cmHead) {
+                var toggle = document.createElement("button");
+                toggle.className = "btn btn-ghost"; toggle.textContent = "raw counts";
+                toggle.style.cssText = "padding:5px 11px;font-size:11px;";
+                var normalized = false;
+                // capture the raw values once
+                var rawCells = Array.prototype.map.call(cmTable.querySelectorAll("td.cm-cell"), function (td) {
+                    return { el: td, val: parseInt(td.textContent, 10) || 0 };
+                });
+                // row totals (actual counts) for normalization
+                var rowTotals = [];
+                Array.prototype.forEach.call(cmTable.querySelectorAll("tbody tr"), function (tr) {
+                    var sum = 0;
+                    tr.querySelectorAll("td.cm-cell").forEach(function (td) {
+                        sum += parseInt(td.textContent, 10) || 0;
+                    });
+                    rowTotals.push(sum);
+                });
+                toggle.addEventListener("click", function () {
+                    normalized = !normalized;
+                    toggle.textContent = normalized ? "normalized %" : "raw counts";
+                    var ri = 0, ci = 0;
+                    rawCells.forEach(function (c, i) {
+                        // determine row index for this cell
+                        var cellRow = Math.floor(i / (Math.sqrt(rawCells.length) || 1));
+                        var total = rowTotals[cellRow] || 1;
+                        if (normalized) {
+                            c.el.textContent = ((c.val / total) * 100).toFixed(0) + "%";
+                        } else {
+                            c.el.textContent = String(c.val);
+                        }
+                    });
+                });
+                cmHead.appendChild(toggle);
+            }
+        }
     }

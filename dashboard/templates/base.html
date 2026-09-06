@@ -59,6 +59,11 @@
     </button>
 
     <div class="sidebar-foot">
+        <button class="nav-item nav-action" id="shortcutsBtn" title="Keyboard shortcuts (?)">
+            <svg class="nav-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Shortcuts
+            <span class="kbd" style="margin-left:auto;">?</span>
+        </button>
         <div class="sysline"><span class="foot-dot"></span> pipeline online</div>
         <div class="sysline faint">SIEM-inspired detection</div>
         <div class="sysline faint">RF + IsolationForest</div>
@@ -124,6 +129,33 @@
 
 <!-- Styled tooltip (filled by JS) -->
 <div class="tip" id="styledTip" role="tooltip" aria-hidden="true"></div>
+
+<!-- Keyboard shortcut help overlay (?) -->
+<div class="modal-backdrop" id="shortcutsBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shortcutsTitle">
+        <div class="modal-head">
+            <h3 id="shortcutsTitle">Keyboard Shortcuts</h3>
+            <button class="drawer-close" id="shortcutsClose" aria-label="close">×</button>
+        </div>
+        <div class="modal-body">
+            <table class="data-table" style="width:100%;">
+                <thead><tr><th>Key</th><th>Action</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="kbd">/</span></td><td>Focus the findings search box (reports page)</td></tr>
+                    <tr><td><span class="kbd">⌘</span> / <span class="kbd">Ctrl</span> + <span class="kbd">K</span></td><td>Open the command palette (quick jump)</td></tr>
+                    <tr><td><span class="kbd">?</span></td><td>Show this shortcuts overlay</td></tr>
+                    <tr><td><span class="kbd">↑</span> <span class="kbd">↓</span></td><td>Navigate command palette results</td></tr>
+                    <tr><td><span class="kbd">⏎</span></td><td>Jump to the selected command palette result</td></tr>
+                    <tr><td><span class="kbd">Esc</span></td><td>Close any open overlay / drawer / modal</td></tr>
+                    <tr><td><span class="kbd">g</span> then <span class="kbd">d</span></td><td>Go to Command Center (dashboard)</td></tr>
+                    <tr><td><span class="kbd">g</span> then <span class="kbd">m</span></td><td>Go to ML Insights</td></tr>
+                    <tr><td><span class="kbd">g</span> then <span class="kbd">f</span></td><td>Go to Findings (reports)</td></tr>
+                </tbody>
+            </table>
+            <p class="small muted" style="margin-top:14px;">All filters, column visibility, density, group-by and sort preferences persist across sessions via localStorage.</p>
+        </div>
+    </div>
+</div>
 
 <script src="{{ url_for('static', filename='js/dashboard.js') }}{{ qp }}"></script>
 </body>
