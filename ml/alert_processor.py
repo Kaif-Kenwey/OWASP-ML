@@ -1,9 +1,18 @@
 import os
 import json
 import re
+import hashlib
+
 import pandas as pd
 
 from ml.encodings import encode_confidence, encode_method
+from config.owasp_mapping import map_cwe_to_attack
+from config.clean import safe_str
+
+# Backward-compatible alias: older code/tests imported map_to_attack from
+# this module. The canonical implementation now lives in
+# config.owasp_mapping.map_cwe_to_attack.
+map_to_attack = map_cwe_to_attack
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_SCAN_PATH = os.path.join(BASE_DIR, "data", "latest_scan.json")
@@ -11,39 +20,11 @@ PROCESSED_OUTPUT_PATH = os.path.join(BASE_DIR, "data", "processed_latest.csv")
 
 
 # ==============================
-# OWASP ATTACK MAPPING
+# Helpers (kept here because they are ZAP-JSON-specific)
 # ==============================
 
-def map_to_attack(cwe):
-    if not cwe:
-        return "Other"
-
-    cwe_str = str(cwe)
-
-    mapping = {
-        "89": "SQL Injection",
-        "79": "Cross Site Scripting (XSS)",
-        "78": "Command Injection",
-        "352": "CSRF",
-        "22": "Path Traversal",
-        "287": "Broken Authentication",
-        "200": "Sensitive Data Exposure",
-        "502": "Insecure Deserialization",
-        "918": "SSRF",
-        "693": "Security Misconfiguration"
-    }
-
-    # match whole CWE ids (comma separated in some ZAP responses)
-    cwe_ids = [c.strip() for c in re.split(r"[,\s]+", cwe_str) if c.strip()]
-
-    for cwe_id in cwe_ids:
-        if cwe_id in mapping:
-            return mapping[cwe_id]
-
-    return "Other"
-
-
 def extract_numeric(value):
+    """Best-effort integer extraction from a ZAP field (e.g. cweid='89')."""
     if not value:
         return 0
     match = re.search(r"\d+", str(value))
@@ -80,12 +61,73 @@ def count_references(references):
     return 0
 
 
+def _stable_signature(alert):
+    """Deterministic signature for an alert -- used for finding_id + correlation."""
+    raw = "|".join([
+        safe_str(alert.get("url", "")),
+        safe_str(alert.get("alert") or alert.get("name") or alert.get("alert_name", "")),
+        safe_str(alert.get("cweid", "")),
+        safe_str(alert.get("method", "")).upper(),
+        safe_str(alert.get("param", "")),
+    ])
+    return hashlib.sha1(raw.encode("utf-8")).hexdigest()[:12]
+
+
+def _path_depth(url):
+    """Number of path segments (excluding scheme/host). Defensive for malformed URLs."""
+    if not isinstance(url, str) or not url.startswith("http"):
+        return 0
+    try:
+        from urllib.parse import urlparse
+        path = urlparse(url).path
+        path = path.strip("/")
+        return len([seg for seg in path.split("/") if seg]) if path else 0
+    except Exception:
+        return 0
+
+
+def _param_count(url):
+    """Number of distinct query parameters in the URL."""
+    if not isinstance(url, str) or "?" not in url:
+        return 0
+    query = url.split("?", 1)[1]
+    if not query:
+        return 0
+    return len([kv for kv in query.split("&") if kv and "=" in kv or kv])
+
+
+def _hostname_length(url):
+    if not isinstance(url, str) or not url.startswith("http"):
+        return 0
+    try:
+        from urllib.parse import urlparse
+        return len(urlparse(url).netloc or "")
+    except Exception:
+        return 0
+
+
+def _https_indicator(url):
+    return 1 if isinstance(url, str) and url.lower().startswith("https://") else 0
+
+
+def _special_char_count(url):
+    special = set("'\"<>{}|;&$`\\%*?")
+    if not isinstance(url, str) or not url:
+        return 0
+    return sum(1 for ch in url if ch in special)
+
+
 # ==============================
 # MAIN PROCESSOR
 # ==============================
 
 def process_alerts(raw_scan_path=None):
-    """Turn raw ZAP alerts into engineered features for ML + reporting."""
+    """Turn raw ZAP alerts into engineered features for ML + reporting.
+
+    Assigns a stable finding_id (F-0001..) and a content signature to every
+    alert so downstream stages can JOIN on finding_id instead of relying on
+    a fragile positional concat.
+    """
 
     scan_file = raw_scan_path or RAW_SCAN_PATH
 
@@ -114,8 +156,7 @@ def process_alerts(raw_scan_path=None):
 
     processed = []
 
-    for alert in alerts_list:
-
+    for idx, alert in enumerate(alerts_list, start=1):
         url = alert.get("url", "")
         risk = extract_risk(alert)
         confidence = alert.get("confidence", "")
@@ -124,27 +165,39 @@ def process_alerts(raw_scan_path=None):
         description = alert.get("description", "")
         solution = alert.get("solution", "")
         references = alert.get("reference", "")
+        attack = map_cwe_to_attack(cwe)
 
-        cwe_numeric = extract_numeric(cwe)
+        finding_id = f"F-{idx:04d}"
+        signature = _stable_signature(alert)
 
         processed.append({
+            # ---- traceability (stable ids, not positional) ----
+            "finding_id": finding_id,
+            "signature": signature,
+            # ---- raw scanner fields ----
             "risk": risk,
             "confidence": confidence,
             "cweid": cwe,
-            "cwe_numeric": cwe_numeric,
-            "attack_type": map_to_attack(cwe),
-            "alert_name": alert.get("alert", ""),
+            "cwe_numeric": extract_numeric(cwe),
+            "attack_type": attack,
+            "alert_name": alert.get("alert") or alert.get("name") or "",
             "method": method,
             "url": url,
-            "url_length": len(url),
-            "param_length": len(url.split("?")[1]) if "?" in url else 0,
-            "has_query_params": 1 if "?" in url else 0,
-            "path_depth": url.count("/") - 2 if url.startswith("http") else 0,
-            "description_length": len(description),
-            "solution_length": len(solution),
-            "reference_count": count_references(references),
+            "param": alert.get("param", ""),
+            # ---- engineered features used by the ML model ----
             "confidence_encoded": encode_confidence(confidence),
-            "method_encoded": encode_method(method)
+            "method_encoded": encode_method(method),
+            "url_length": len(str(url)),
+            "param_length": len(str(url).split("?")[1]) if "?" in str(url) else 0,
+            "param_count": _param_count(url),
+            "has_query_params": 1 if "?" in str(url) else 0,
+            "path_depth": _path_depth(url),
+            "hostname_length": _hostname_length(url),
+            "https_indicator": _https_indicator(url),
+            "special_char_count": _special_char_count(url),
+            "description_length": len(str(description)),
+            "solution_length": len(str(solution)),
+            "reference_count": count_references(references),
         })
 
     df = pd.DataFrame(processed)

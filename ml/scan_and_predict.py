@@ -39,11 +39,17 @@ def acquire_alerts(target_url=None, demo=False):
 
 
 def predict_and_report():
-    """Score every processed alert with the hybrid model and build the report."""
+    """Score every processed alert with the hybrid model and build the report.
+
+    Carries finding_id end-to-end and writes the four separated ML signals
+    (classifier_confidence, anomaly_score, static_risk_weight,
+    hybrid_threat_score) so the threat-intelligence stage can JOIN on
+    finding_id instead of doing a fragile positional concat.
+    """
 
     processed_path = os.path.join(BASE_DIR, "data", "processed_latest.csv")
     if not os.path.exists(processed_path):
-        print("No processed alerts found — run the preprocessing step first.")
+        print("No processed alerts found -- run the preprocessing step first.")
         return None
 
     df = pd.read_csv(processed_path)
@@ -57,14 +63,17 @@ def predict_and_report():
     results = []
 
     for _, row in df.iterrows():
-
         sample = {
             "confidence_encoded": row["confidence_encoded"],
             "method_encoded": row["method_encoded"],
             "url_length": row["url_length"],
             "param_length": row["param_length"],
+            "param_count": row["param_count"],
             "has_query_params": row["has_query_params"],
             "path_depth": row["path_depth"],
+            "hostname_length": row["hostname_length"],
+            "https_indicator": row["https_indicator"],
+            "special_char_count": row["special_char_count"],
             "description_length": row["description_length"],
             "solution_length": row["solution_length"],
             "reference_count": row["reference_count"],
@@ -77,9 +86,15 @@ def predict_and_report():
         prediction = hybrid_predict(features)
 
         results.append({
+            "finding_id": row["finding_id"],
             "original_risk": row["risk"],
             "predicted_risk": prediction["predicted_risk"],
-            "hybrid_score": prediction["hybrid_threat_score"]
+            "classifier_confidence": prediction["classifier_confidence"],
+            "anomaly_score": prediction["anomaly_score"],
+            "static_risk_weight": prediction["static_risk_weight"],
+            "hybrid_threat_score": prediction["hybrid_threat_score"],
+            # kept for backward compatibility with any old reader
+            "hybrid_score": prediction["hybrid_threat_score"],
         })
 
     results_df = pd.DataFrame(results)
