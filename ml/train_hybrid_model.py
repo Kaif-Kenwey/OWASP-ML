@@ -39,6 +39,10 @@ def train_hybrid():
 
     print("Dataset shape:", df.shape)
 
+    # models/ is not tracked in git (artifacts rebuild via this pipeline),
+    # so create it before anything tries to save into it
+    os.makedirs(MODEL_DIR, exist_ok=True)
+
     # ----------- LABEL ENCODING -----------
     le = LabelEncoder()
     df["risk_encoded"] = le.fit_transform(df["risk"])
@@ -104,7 +108,6 @@ def train_hybrid():
     iso.fit(X_all)
 
     # ----------- SAVE MODELS -----------
-    os.makedirs(MODEL_DIR, exist_ok=True)
     joblib.dump(clf, os.path.join(MODEL_DIR, "risk_classifier.pkl"))
     joblib.dump(iso, os.path.join(MODEL_DIR, "anomaly_detector.pkl"))
 
