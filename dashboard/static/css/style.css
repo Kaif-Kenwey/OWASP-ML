@@ -532,7 +532,7 @@ code, .code {
    ===================================================== */
 .chart-card { display: flex; flex-direction: column; }
 .chart-box { position: relative; flex: 1; min-height: 260px; }
-.chart-box-short { min-height: 190px; }
+.chart-box-short { min-height: 220px; }
 
 /* =====================================================
    TOP URLS LIST
@@ -858,12 +858,13 @@ code, .code {
 /* =====================================================
    ATTACK MATRIX INTERACTIVITY + COUNT-UP
    ===================================================== */
-.matrix-cell { cursor: pointer; transition: transform 0.12s ease, box-shadow 0.12s ease; }
+.matrix-cell { cursor: pointer; transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease; }
 .matrix-cell:not(.empty):hover {
-    transform: scale(1.08); box-shadow: 0 0 0 2px var(--cyan), 0 0 14px rgba(34,211,238,0.4);
-    z-index: 3;
+    transform: scale(1.18); box-shadow: 0 0 0 2px var(--cyan), 0 0 18px rgba(34,211,238,0.5);
+    z-index: 3; filter: brightness(1.25);
 }
-.matrix-cell.empty { cursor: default; }
+.matrix-cell.empty { cursor: default; opacity: 0.4; }
+.matrix-cell.empty:hover { transform: none; box-shadow: none; }
 
 /* KPI count-up: the number animates from 0 to its value on load */
 .kpi-count { font-variant-numeric: tabular-nums; }
@@ -1122,3 +1123,54 @@ td.col-select input[type="checkbox"] { accent-color: var(--cyan); cursor: pointe
 }
 .bulk-bar .bb-btn:hover { background: var(--cyan); }
 .bulk-bar .bb-clear { background: transparent; color: var(--ink-soft); border: 1px solid var(--line); }
+
+/* =====================================================
+   REPORTS: SEVERITY ROW TINTS + ANOMALY BADGE + COL PIN
+   ===================================================== */
+/* subtle severity tint on the row (left border already on the badge; this
+   tints the whole row very faintly so analysts can scan by severity) */
+tr.report-row[data-severity="Critical"] td { background: rgba(244, 63, 94, 0.05); }
+tr.report-row[data-severity="Critical"]:hover td { background: rgba(244, 63, 94, 0.10); }
+tr.report-row[data-severity="High"] td { background: rgba(239, 68, 68, 0.04); }
+tr.report-row[data-severity="High"]:hover td { background: rgba(239, 68, 68, 0.09); }
+tr.report-row[data-severity="Medium"] td { background: rgba(245, 158, 11, 0.04); }
+tr.report-row[data-severity="Medium"]:hover td { background: rgba(245, 158, 11, 0.09); }
+tr.report-row[data-severity="Low"] td { background: rgba(52, 211, 153, 0.03); }
+tr.report-row[data-severity="Low"]:hover td { background: rgba(52, 211, 153, 0.08); }
+tr.report-row[data-severity="Informational"] td { background: transparent; }
+tr.report-row[data-severity="Informational"]:hover td { background: rgba(100, 116, 139, 0.08); }
+/* keep the hover consistent with the earlier cyan hover for non-severity rows */
+tr.report-row:hover td { background: rgba(34, 211, 238, 0.04); }
+/* but severity rows keep their severity hover (re-apply with higher specificity) */
+tr.report-row[data-severity="Critical"]:hover td { background: rgba(244, 63, 94, 0.10) !important; }
+tr.report-row[data-severity="High"]:hover td { background: rgba(239, 68, 68, 0.09) !important; }
+tr.report-row[data-severity="Medium"]:hover td { background: rgba(245, 158, 11, 0.09) !important; }
+tr.report-row[data-severity="Low"]:hover td { background: rgba(52, 211, 153, 0.08) !important; }
+
+/* anomaly badge (high/med/low indicator in the Anomaly column) */
+.anom-badge {
+    display: inline-block; padding: 1px 6px; border-radius: 4px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    border: 1px solid transparent; margin-right: 4px; vertical-align: middle;
+}
+.anom-badge.high { background: rgba(244,63,94,0.14); color: var(--critical); border-color: rgba(244,63,94,0.3); }
+.anom-badge.med  { background: rgba(245,158,11,0.14); color: var(--medium); border-color: rgba(245,158,11,0.3); }
+.anom-badge.low  { background: rgba(100,116,139,0.14); color: var(--ink-soft); border-color: var(--line); }
+
+/* pinned Severity column (sticky on horizontal scroll) */
+.data-table th.col-severity, .data-table td.col-severity {
+    position: sticky; left: 32px; z-index: 1;
+    box-shadow: 1px 0 0 var(--line) inset;
+}
+.data-table th.col-severity { z-index: 3; left: 32px; }
+.data-table th.col-select, .data-table td.col-select {
+    position: sticky; left: 0; z-index: 1;
+    box-shadow: 1px 0 0 var(--line) inset;
+}
+.data-table th.col-select { z-index: 3; }
+/* keep the severity tint on top of the sticky background */
+tr.report-row[data-severity="Critical"] td.col-severity { background: rgba(244, 63, 94, 0.12) !important; }
+tr.report-row[data-severity="High"] td.col-severity { background: rgba(239, 68, 68, 0.10) !important; }
+tr.report-row[data-severity="Medium"] td.col-severity { background: rgba(245, 158, 11, 0.10) !important; }
+tr.report-row[data-severity="Low"] td.col-severity { background: rgba(52, 211, 153, 0.08) !important; }
+tr.report-row[data-severity="Informational"] td.col-severity { background: var(--panel-3) !important; }

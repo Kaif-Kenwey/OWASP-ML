@@ -1737,3 +1737,27 @@ document.addEventListener("DOMContentLoaded", function () {
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
         setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
     }
+
+    // =====================================================
+    // REPORTS: ANOMALY BADGE (high/med/low indicator)
+    // =====================================================
+    // Replaces the plain numeric anomaly cell with a badge + the value.
+    // Thresholds: > 0.15 high (red), > 0.05 med (amber), else low (grey).
+    function injectAnomalyBadges() {
+        var rb = document.getElementById("reportBody");
+        if (!rb) return;
+        rb.querySelectorAll("tr.report-row").forEach(function (row) {
+            var cell = row.querySelector("td.col-anomaly");
+            if (!cell || cell.dataset.badged === "1") return;
+            var val = parseFloat(cell.textContent);
+            if (isNaN(val)) return;
+            var cls = val > 0.15 ? "high" : (val > 0.05 ? "med" : "low");
+            var label = cls === "high" ? "HIGH" : (cls === "med" ? "MED" : "LOW");
+            cell.innerHTML = '<span class="anom-badge ' + cls + '">' + label + '</span><span class="mono">' + val.toFixed(3) + '</span>';
+            cell.dataset.badged = "1";
+        });
+    }
+    injectAnomalyBadges();
+    // re-inject after sort (sort reorders rows but doesn't change cell content,
+    // so the badges survive -- but call once more to be safe)
+    document.addEventListener("reportFiltersChanged", injectAnomalyBadges);
