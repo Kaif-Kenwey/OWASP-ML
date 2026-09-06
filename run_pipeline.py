@@ -47,6 +47,13 @@ def run_ai_summary():
 
 
 def main():
+    # optional .env support (AI keys, ZAP config) — project runs fine without it
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(BASE_DIR, ".env"))
+    except ImportError:
+        pass
+
     parser = argparse.ArgumentParser(description="OWASP-ML detection pipeline")
     parser.add_argument("target", nargs="?", help="Target URL to scan with OWASP ZAP")
     parser.add_argument("--demo", action="store_true",

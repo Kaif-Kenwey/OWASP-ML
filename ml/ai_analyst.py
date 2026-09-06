@@ -23,6 +23,13 @@ import os
 import json
 import pandas as pd
 
+# optional .env support for standalone runs (run_pipeline.py loads it too)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env"))
+except ImportError:
+    pass
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORT_PATH = os.path.join(BASE_DIR, "data", "threat_report.csv")
 OUTPUT_PATH = os.path.join(BASE_DIR, "data", "ai_summary.json")
