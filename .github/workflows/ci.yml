@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Unit tests
+        run: pytest tests/ -q
+
+      - name: Smoke test — full demo pipeline (no ZAP needed)
+        run: python run_pipeline.py --demo
+
+      - name: Smoke test — dashboard boots
+        run: |
+          python - <<'EOF'
+          import os, sys
+          sys.path.insert(0, os.getcwd())
+          os.environ["FLASK_TESTING"] = "1"
+          from dashboard.app import app
+          client = app.test_client()
+          for route in ["/", "/ml-insights", "/reports"]:
+              r = client.get(route)
+              assert r.status_code == 200, f"{route} returned {r.status_code}"
+          print("Dashboard routes OK")
+          EOF

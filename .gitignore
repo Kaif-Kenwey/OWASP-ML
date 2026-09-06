@@ -1,0 +1,30 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.save
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# --- Environment / secrets ---
+.env
+
+# --- Trained model artifacts (rebuild with: python run_pipeline.py --demo) ---
+models/*.pkl
+models/training_metrics.json
+
+# --- Generated pipeline outputs (data/sample/ IS committed for demo mode) ---
+data/latest_scan.json
+data/report.json
+data/processed*.csv
+data/final_results.csv
+data/threat_report.csv
+data/ai_summary.json
+reports/
+
+# --- OS / editor noise ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
