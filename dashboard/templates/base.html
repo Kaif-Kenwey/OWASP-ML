@@ -1,22 +1,61 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>OWASP AI Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}OWASP-ML{% endblock %} · OWASP-ML</title>
+
+    <!-- Poppins stays — it was the original identity of the dashboard -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <!-- Chart.js from CDN, same as the original setup -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
 <div class="sidebar">
-    <h2>OWASP AI</h2>
-    <a href="/">Dashboard</a>
-    <a href="/ml-insights">ML Insights</a>
-    <a href="/reports">Detailed Report</a>
+    <a class="brand" href="/">
+        <svg class="brand-shield" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <path d="M12 2 L20 5 V11 C20 16.5 16.7 20.6 12 22 C7.3 20.6 4 16.5 4 11 V5 Z"
+                  fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+            <path d="M8.5 11.5 L11 14 L15.5 9" fill="none" stroke="currentColor"
+                  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>OWASP-ML</span>
+    </a>
+
+    <nav class="nav">
+        <a class="nav-item {% if request.path == '/' %}active{% endif %}" href="/">Dashboard</a>
+        <a class="nav-item {% if request.path == '/ml-insights' %}active{% endif %}" href="/ml-insights">ML Insights</a>
+        <a class="nav-item {% if request.path == '/reports' %}active{% endif %}" href="/reports">Reports</a>
+        <a class="nav-item nav-download" href="/download-report">Download CSV</a>
+    </nav>
+
+    <div class="sidebar-foot">
+        <span class="foot-dot"></span> ZAP + ML pipeline
+    </div>
 </div>
 
-<div class="main-content">
-    {% block content %}{% endblock %}
+<div class="main">
+    <header class="topbar">
+        <div class="topbar-titles">
+            <h1 class="page-title">{% block page_title %}{% endblock %}</h1>
+            <p class="source-hint">Source: data/threat_report.csv</p>
+        </div>
+        <div class="topbar-actions">{% block topbar_actions %}{% endblock %}</div>
+    </header>
+
+    <main class="content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        OWASP-ML — Detection Engineering with SIEM + ML · Author: Mohammad Kaif
+    </footer>
 </div>
 
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
 </body>
 </html>

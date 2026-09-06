@@ -1,42 +1,163 @@
 {% extends "base.html" %}
 
+{% block title %}ML Insights{% endblock %}
+{% block page_title %}ML Insights{% endblock %}
+
 {% block content %}
 
-<h1>Machine Learning Insights</h1>
+<!-- ================= MODEL STATUS BANNER ================= -->
+{% if metrics and metrics.classifier_trained %}
+<div class="banner banner-ok">
+    <strong>Model trained.</strong> Metrics below were persisted by the last training run
+    (<code>models/training_metrics.json</code>).
+</div>
+{% else %}
+<div class="banner banner-warn">
+    <strong>No trained model found.</strong> The metrics file is missing or the classifier
+    has not been trained yet. Generate it with:
+    <span class="empty-command inline">python run_pipeline.py --demo</span>
+</div>
+{% endif %}
 
-<div class="stats-grid">
-    <div class="card low">
-        <h3>ML Low</h3>
-        <p>{{ ml_low }}</p>
+{% if metrics %}
+
+<!-- ================= HEADLINE METRICS ================= -->
+<div class="kpi-row">
+    <div class="kpi kpi-accent">
+        <span class="kpi-count">{{ '%.1f' | format((accuracy or 0) * 100) }}%</span>
+        <span class="kpi-label">Accuracy</span>
     </div>
-
-    <div class="card medium">
-        <h3>ML Medium</h3>
-        <p>{{ ml_medium }}</p>
+    <div class="kpi kpi-accent">
+        <span class="kpi-count">{{ '%.2f' | format(macro_f1 or 0) }}</span>
+        <span class="kpi-label">Macro Avg F1</span>
     </div>
-
-    <div class="card high">
-        <h3>ML High</h3>
-        <p>{{ ml_high }}</p>
+    <div class="kpi kpi-neutral">
+        <span class="kpi-count">{{ metrics.dataset_rows | default(0) }}</span>
+        <span class="kpi-label">Dataset Rows</span>
+    </div>
+    <div class="kpi kpi-neutral">
+        <span class="kpi-count">{{ feature_count }}</span>
+        <span class="kpi-label">Features</span>
     </div>
 </div>
 
-<div class="chart-container">
-    <canvas id="mlChart"></canvas>
+<div class="grid-2">
+
+    <!-- ================= PER-CLASS REPORT ================= -->
+    <div class="card">
+        <h2>Per-Class Performance</h2>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Risk Class</th>
+                        <th>Precision</th>
+                        <th>Recall</th>
+                        <th>F1</th>
+                        <th>Support</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in class_rows %}
+                    <tr>
+                        <td>{{ row.label }}</td>
+                        <td>{{ '%.2f' | format(row.precision or 0) }}</td>
+                        <td>{{ '%.2f' | format(row.recall or 0) }}</td>
+                        <td>{{ '%.2f' | format(row.f1 or 0) }}</td>
+                        <td>{{ '%.0f' | format(row.support or 0) }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% if macro_f1 %}
+                    <tr class="row-total">
+                        <td>Macro Avg</td>
+                        <td>{{ '%.2f' | format(metrics.classification_report['macro avg'].precision | default(0)) }}</td>
+                        <td>{{ '%.2f' | format(metrics.classification_report['macro avg'].recall | default(0)) }}</td>
+                        <td>{{ '%.2f' | format(macro_f1) }}</td>
+                        <td>{{ '%.0f' | format(metrics.classification_report['macro avg'].support | default(0)) }}</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================= CONFUSION MATRIX ================= -->
+    <div class="card">
+        <h2>Confusion Matrix</h2>
+        {% if metrics.confusion_matrix %}
+        {% set cm = metrics.confusion_matrix %}
+        <p class="muted small">Rows = actual class, columns = predicted class.</p>
+        <div class="table-wrap">
+            <table class="cm-table">
+                <thead>
+                    <tr>
+                        <th class="cm-corner">actual ↓ / pred →</th>
+                        {% for label in cm_labels %}
+                        <th>{{ label }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in cm %}
+                    {% set outer = loop %}
+                    {% set row_max = row | max if row else 0 %}
+                    <tr>
+                        <th>{{ cm_labels[outer.index0] }}</th>
+                        {% for val in row %}
+                        {% set frac = (val / row_max) if row_max else 0 %}
+                        {% set alpha = frac if frac > 0.08 else (0.08 if val else 0) %}
+                        <td class="cm-cell {% if outer.index0 == loop.index0 %}cm-diag{% endif %}"
+                            style="background: rgba({{ '22,163,110' if outer.index0 == loop.index0 else '220,80,60' }}, {{ alpha }});">
+                            {{ val }}
+                        </td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="muted">No confusion matrix in the metrics file.</p>
+        {% endif %}
+    </div>
+
 </div>
 
-<script>
-new Chart(document.getElementById('mlChart'), {
-    type: 'bar',
-    data: {
-        labels: ['Low', 'Medium', 'High'],
-        datasets: [{
-            label: 'Predicted Risk',
-            data: [{{ ml_low }}, {{ ml_medium }}, {{ ml_high }}],
-            backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
-        }]
-    }
-});
-</script>
+{% endif %}
+
+<!-- ================= PREDICTION BREAKDOWN (needs the CSV) ================= -->
+{% if has_data %}
+
+<div class="grid-2">
+    <div class="card chart-card">
+        <h2>ML Confidence Distribution</h2>
+        <div class="chart-box">
+            <canvas id="confBucketChart"></canvas>
+        </div>
+    </div>
+
+    <div class="card chart-card">
+        <h2>Scanner Risk vs ML Prediction</h2>
+        <div class="chart-box">
+            <canvas id="origPredChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="chart-data">{{ chart_data | safe }}</script>
+
+{% elif not metrics %}
+
+<div class="card empty-state">
+    <div class="empty-glyph">📊</div>
+    <h2>Nothing to analyse yet</h2>
+    <p>
+        This page needs <code>models/training_metrics.json</code> and
+        <code>data/threat_report.csv</code>. Both are produced by the pipeline:
+    </p>
+    <p class="empty-command">python run_pipeline.py --demo</p>
+</div>
+
+{% endif %}
 
 {% endblock %}

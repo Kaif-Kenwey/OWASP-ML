@@ -1,32 +1,79 @@
 {% extends "base.html" %}
 
+{% block title %}Reports{% endblock %}
+{% block page_title %}Detailed Findings{% endblock %}
+
+{% block topbar_actions %}
+{% if has_data %}
+<a class="btn btn-accent" href="/download-report">Export CSV</a>
+{% endif %}
+{% endblock %}
+
 {% block content %}
 
-<h1>Detailed Vulnerability Report</h1>
+{% if not has_data %}
 
-<table class="intel-table">
-    <thead>
-        <tr>
-            <th>URL</th>
-            <th>Risk</th>
-            <th>Attack Type</th>
-            <th>CWE</th>
-            <th>Method</th>
-            <th>Confidence</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for row in data %}
-        <tr>
-            <td>{{ row.url }}</td>
-            <td>{{ row.risk }}</td>
-            <td>{{ row.attack_type }}</td>
-            <td>CWE-{{ row.cwe_numeric }}</td>
-            <td>{{ row.method }}</td>
-            <td>{{ row.confidence }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<div class="card empty-state">
+    <div class="empty-glyph">📄</div>
+    <h2>No report rows yet</h2>
+    <p>
+        The findings table is built from <code>data/threat_report.csv</code>.
+        Run the pipeline to produce it, then refresh:
+    </p>
+    <p class="empty-command">python run_pipeline.py --demo</p>
+</div>
+
+{% else %}
+
+<!-- ================= TOOLBAR ================= -->
+<div class="toolbar">
+    <input type="search" id="reportSearch" class="search-input"
+           placeholder="Filter findings (url, attack type, risk...)" autocomplete="off">
+    <span class="toolbar-note">
+        Showing {{ rows | length }} of {{ total }} findings{% if total > rows | length %} (capped at 500){% endif %}
+        — sorted by ML confidence
+    </span>
+</div>
+
+<!-- ================= FINDINGS TABLE ================= -->
+<div class="card table-card">
+    <div class="table-scroll">
+        <table class="data-table report-table">
+            <thead>
+                <tr>
+                    <th>Severity</th>
+                    <th>Scanner Risk</th>
+                    <th>ML Prediction</th>
+                    <th>ML Conf %</th>
+                    <th>Attack Type</th>
+                    <th>OWASP Category</th>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Explanation</th>
+                </tr>
+            </thead>
+            <tbody id="reportBody">
+                {% for r in rows %}
+                <tr class="report-row">
+                    <td><span class="badge {{ r.sev }}">{{ r.severity }}</span></td>
+                    <td>{{ r.scanner_risk }}</td>
+                    <td>{{ r.ml_prediction }}</td>
+                    <td class="conf-cell">
+                        <span class="conf-bar"><span class="conf-fill" style="width: {{ r.conf_width }}%;"></span></span>
+                        {{ r.ml_conf }}
+                    </td>
+                    <td>{{ r.attack_type }}</td>
+                    <td>{{ r.owasp }}</td>
+                    <td>{{ r.method }}</td>
+                    <td class="path-cell" title="{{ r.url }}">{{ r.path }}</td>
+                    <td class="explain-cell" title="{{ r.explanation }}">{{ r.explanation }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endif %}
 
 {% endblock %}
